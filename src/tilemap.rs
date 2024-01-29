@@ -72,27 +72,34 @@ impl Tilemap {
         let y = (pos.y / self.tile_size.y).round() as usize;
         let mut vec = vec![];
         for n in 0..9 {
-            let dx = n % 3 - 1 as i32;
-            let dy = n / 3 - 1 as i32;
+            let dx = n % 3 - 1_i32;
+            let dy = n / 3 - 1_i32;
             let ix = max(x as i32 + dx, 0) as usize;
             let iy = max(y as i32 + dy, 0) as usize;
             let fx = (x as i32 + dx) as f32;
             let fy = (y as i32 + dy) as f32;
-            let rect = Rect::new(fx as f32 * self.tile_width(), fy * self.tile_height(), self.tile_width(), self.tile_height());
+            let rect = Rect::new(
+                fx * self.tile_width(),
+                fy * self.tile_height(),
+                self.tile_width(),
+                self.tile_height(),
+            );
             if let Some(t) = self.tiles.get(self.pos_to_index((ix, iy))) {
                 let distance = pos.distance(rect.center());
                 vec.push((distance, *t, rect));
             }
         }
         vec.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-        vec.into_iter()
-            .map(|(_, t, r)| (t, r))
-            .collect()
+        vec.into_iter().map(|(_, t, r)| (t, r)).collect()
     }
 
     pub fn run_for_each_tile<F>(&self, mut f: F)
-    where F : FnMut((usize, usize), &Tile)
+    where
+        F: FnMut((usize, usize), &Tile),
     {
-        self.tiles.iter().enumerate().for_each(|(index, tile)| f(self.index_to_pos(index), tile));
+        self.tiles
+            .iter()
+            .enumerate()
+            .for_each(|(index, tile)| f(self.index_to_pos(index), tile));
     }
 }

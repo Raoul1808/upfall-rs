@@ -4,7 +4,10 @@ use tetra::{
     math::{Rect, Vec2},
 };
 
-use crate::{tilemap::{Tile, Tilemap}, Assets};
+use crate::{
+    tilemap::{Tile, Tilemap},
+    Assets,
+};
 
 pub trait Scene {
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result;
@@ -53,7 +56,12 @@ impl Player {
     }
 
     pub fn solve_collision_y(&mut self, rect: &Rect<f32, f32>) {
-        let next_hbox = Rect::new(self.position.x, self.position.y + self.velocity.y, PLAYER_SQUARE, PLAYER_SQUARE);
+        let next_hbox = Rect::new(
+            self.position.x,
+            self.position.y + self.velocity.y,
+            PLAYER_SQUARE,
+            PLAYER_SQUARE,
+        );
         if rect.collides_with_rect(next_hbox) {
             if self.velocity.y < 0. {
                 self.position.y = rect.y + rect.h;
@@ -65,9 +73,14 @@ impl Player {
             }
         }
     }
-    
+
     pub fn solve_collision_x(&mut self, rect: &Rect<f32, f32>) {
-        let next_hbox = Rect::new(self.position.x + self.velocity.x, self.position.y, PLAYER_SQUARE, PLAYER_SQUARE);
+        let next_hbox = Rect::new(
+            self.position.x + self.velocity.x,
+            self.position.y,
+            PLAYER_SQUARE,
+            PLAYER_SQUARE,
+        );
         if rect.collides_with_rect(next_hbox) {
             if self.velocity.x > 0. {
                 self.position.x = rect.x - PLAYER_SQUARE;
@@ -103,7 +116,7 @@ impl GameScene {
         tilemap.set_tile_usize((7, 4), Tile::Solid);
         GameScene {
             player: Player::new(),
-            tilemap: tilemap,
+            tilemap,
             mouse_pos: Vec2::default(),
         }
     }
@@ -119,8 +132,10 @@ impl Scene for GameScene {
             self.tilemap.set_tile_f32(self.mouse_pos, Tile::None);
         }
         self.player.update(ctx);
-        
-        let neighbors = self.tilemap.get_neigbor_rects(self.player.position + PLAYER_SQUARE / 2.1);
+
+        let neighbors = self
+            .tilemap
+            .get_neigbor_rects(self.player.position + PLAYER_SQUARE / 2.1);
         for tile in &neighbors {
             if matches!(tile.0, Tile::Solid) {
                 self.player.solve_collision_y(&tile.1);
@@ -150,7 +165,7 @@ impl Scene for GameScene {
                     DrawParams::new()
                         .position(Vec2::from((real_x, real_y)))
                         .scale(self.tilemap.tile_size())
-                        .color(Color::BLACK)
+                        .color(Color::BLACK),
                 );
             }
         });
@@ -159,7 +174,7 @@ impl Scene for GameScene {
             DrawParams::new()
                 .position(self.tilemap.snap(self.mouse_pos))
                 .scale(self.tilemap.tile_size())
-                .color(Color::WHITE.with_alpha(0.3))
+                .color(Color::WHITE.with_alpha(0.3)),
         );
         Ok(())
     }

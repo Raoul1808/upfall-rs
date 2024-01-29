@@ -44,6 +44,13 @@ impl Tilemap {
         (index % self.tilemap_size.x, index / self.tilemap_size.x)
     }
 
+    pub fn snap(&self, pos: Vec2<f32>) -> Vec2<f32> {
+        Vec2::new(
+            (pos.x / self.tile_width()).trunc() * self.tile_width(),
+            (pos.y / self.tile_height()).trunc() * self.tile_height(),
+        )
+    }
+
     pub fn set_tile_f32(&mut self, pos: Vec2<f32>, tile: Tile) {
         if pos.x < 0. || pos.y < 0. {
             return;

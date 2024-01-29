@@ -88,6 +88,7 @@ impl Player {
 pub struct GameScene {
     player: Player,
     tilemap: Tilemap,
+    mouse_pos: Vec2<f32>,
 }
 
 impl GameScene {
@@ -103,18 +104,19 @@ impl GameScene {
         GameScene {
             player: Player::new(),
             tilemap: tilemap,
+            mouse_pos: Vec2::default(),
         }
     }
 }
 
 impl Scene for GameScene {
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result {
-        let m_pos = input::get_mouse_position(ctx);
+        self.mouse_pos = input::get_mouse_position(ctx);
         if input::is_mouse_button_down(ctx, input::MouseButton::Left) {
-            self.tilemap.set_tile_f32(m_pos, Tile::Solid);
+            self.tilemap.set_tile_f32(self.mouse_pos, Tile::Solid);
         }
         if input::is_mouse_button_down(ctx, input::MouseButton::Right) {
-            self.tilemap.set_tile_f32(m_pos, Tile::None);
+            self.tilemap.set_tile_f32(self.mouse_pos, Tile::None);
         }
         self.player.update(ctx);
         
@@ -152,6 +154,13 @@ impl Scene for GameScene {
                 );
             }
         });
+        assets.pixel.draw(
+            ctx,
+            DrawParams::new()
+                .position(self.tilemap.snap(self.mouse_pos))
+                .scale(self.tilemap.tile_size())
+                .color(Color::WHITE.with_alpha(0.3))
+        );
         Ok(())
     }
 }

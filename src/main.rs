@@ -4,6 +4,7 @@ use tetra::{
     ContextBuilder, State,
 };
 
+mod player;
 mod scenes;
 mod tilemap;
 

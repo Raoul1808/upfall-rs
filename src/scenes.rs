@@ -1,10 +1,11 @@
 use tetra::{
     graphics::{Color, DrawParams},
-    input::{self, Key},
-    math::{Rect, Vec2},
+    input,
+    math::Vec2,
 };
 
 use crate::{
+    player::Player,
     tilemap::{Tile, Tilemap},
     Assets,
 };
@@ -12,90 +13,6 @@ use crate::{
 pub trait Scene {
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result;
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result;
-}
-
-#[derive(Debug)]
-pub struct Player {
-    pub position: Vec2<f32>,
-    pub velocity: Vec2<f32>,
-}
-
-const PLAYER_SQUARE: f32 = 32.;
-
-impl Player {
-    pub fn new() -> Player {
-        Player {
-            position: Vec2::new(100., 100.),
-            velocity: Vec2::default(),
-        }
-    }
-
-    pub fn update(&mut self, ctx: &mut tetra::Context) {
-        const MAX_FALL_SPEED: f32 = 15.;
-        const GRAVITY: f32 = 0.7;
-        const JUMP_FORCE: f32 = 11.;
-        const WALK_SPEED: f32 = 4.;
-
-        let mut x_vel = 0.;
-        if input::is_key_down(ctx, Key::Left) {
-            x_vel = -WALK_SPEED;
-        }
-        if input::is_key_down(ctx, Key::Right) {
-            x_vel = WALK_SPEED;
-        }
-        self.velocity.x = x_vel;
-
-        self.velocity.y += GRAVITY;
-        if self.velocity.y > MAX_FALL_SPEED {
-            self.velocity.y = MAX_FALL_SPEED;
-        }
-
-        if input::is_key_pressed(ctx, Key::Space) {
-            self.velocity.y = -JUMP_FORCE;
-        }
-    }
-
-    pub fn solve_collision_y(&mut self, rect: &Rect<f32, f32>) {
-        let next_hbox = Rect::new(
-            self.position.x,
-            self.position.y + self.velocity.y,
-            PLAYER_SQUARE,
-            PLAYER_SQUARE,
-        );
-        if rect.collides_with_rect(next_hbox) {
-            if self.velocity.y < 0. {
-                self.position.y = rect.y + rect.h;
-                self.velocity.y = 0.;
-            }
-            if self.velocity.y > 0. {
-                self.position.y = rect.y - PLAYER_SQUARE;
-                self.velocity.y = 0.;
-            }
-        }
-    }
-
-    pub fn solve_collision_x(&mut self, rect: &Rect<f32, f32>) {
-        let next_hbox = Rect::new(
-            self.position.x + self.velocity.x,
-            self.position.y,
-            PLAYER_SQUARE,
-            PLAYER_SQUARE,
-        );
-        if rect.collides_with_rect(next_hbox) {
-            if self.velocity.x > 0. {
-                self.position.x = rect.x - PLAYER_SQUARE;
-                self.velocity.x = 0.;
-            }
-            if self.velocity.x < 0. {
-                self.position.x = rect.x + rect.w;
-                self.velocity.x = 0.;
-            }
-        }
-    }
-
-    pub fn post_update(&mut self) {
-        self.position += self.velocity;
-    }
 }
 
 pub struct GameScene {
@@ -135,7 +52,7 @@ impl Scene for GameScene {
 
         let neighbors = self
             .tilemap
-            .get_neigbor_rects(self.player.position + PLAYER_SQUARE / 2.1);
+            .get_neigbor_rects(self.player.position + Player::PLAYER_SQUARE / 2.1);
         for tile in &neighbors {
             if matches!(tile.0, Tile::Solid) {
                 self.player.solve_collision_y(&tile.1);

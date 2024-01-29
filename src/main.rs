@@ -5,6 +5,7 @@ use tetra::{
 };
 
 mod scenes;
+mod tilemap;
 
 struct Assets {
     pixel: Texture,

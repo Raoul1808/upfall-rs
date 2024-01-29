@@ -4,13 +4,14 @@ use tetra::{
     math::{Rect, Vec2},
 };
 
-use crate::Assets;
+use crate::{tilemap::{Tile, Tilemap}, Assets};
 
 pub trait Scene {
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result;
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result;
 }
 
+#[derive(Debug)]
 pub struct Player {
     pub position: Vec2<f32>,
     pub velocity: Vec2<f32>,
@@ -27,16 +28,17 @@ impl Player {
     }
 
     pub fn update(&mut self, ctx: &mut tetra::Context) {
-        const MAX_FALL_SPEED: f32 = 10.;
-        const GRAVITY: f32 = 0.5;
-        const JUMP_FORCE: f32 = 6.;
+        const MAX_FALL_SPEED: f32 = 15.;
+        const GRAVITY: f32 = 0.7;
+        const JUMP_FORCE: f32 = 11.;
+        const WALK_SPEED: f32 = 4.;
 
         let mut x_vel = 0.;
         if input::is_key_down(ctx, Key::Left) {
-            x_vel = -2.;
+            x_vel = -WALK_SPEED;
         }
         if input::is_key_down(ctx, Key::Right) {
-            x_vel = 2.;
+            x_vel = WALK_SPEED;
         }
         self.velocity.x = x_vel;
 
@@ -51,9 +53,8 @@ impl Player {
     }
 
     pub fn solve_collision_y(&mut self, rect: &Rect<f32, f32>) {
-        self.position.y += self.velocity.y;
-        let hbox = self.make_hbox();
-        if rect.collides_with_rect(hbox) {
+        let next_hbox = Rect::new(self.position.x, self.position.y + self.velocity.y, PLAYER_SQUARE, PLAYER_SQUARE);
+        if rect.collides_with_rect(next_hbox) {
             if self.velocity.y < 0. {
                 self.position.y = rect.y + rect.h;
                 self.velocity.y = 0.;
@@ -64,11 +65,10 @@ impl Player {
             }
         }
     }
-
+    
     pub fn solve_collision_x(&mut self, rect: &Rect<f32, f32>) {
-        self.position.x += self.velocity.x;
-        let hbox = self.make_hbox();
-        if rect.collides_with_rect(hbox) {
+        let next_hbox = Rect::new(self.position.x + self.velocity.x, self.position.y, PLAYER_SQUARE, PLAYER_SQUARE);
+        if rect.collides_with_rect(next_hbox) {
             if self.velocity.x > 0. {
                 self.position.x = rect.x - PLAYER_SQUARE;
                 self.velocity.x = 0.;
@@ -80,30 +80,29 @@ impl Player {
         }
     }
 
-    pub fn make_hbox(&self) -> Rect<f32, f32> {
-        Rect::new(
-            self.position.x,
-            self.position.y,
-            PLAYER_SQUARE,
-            PLAYER_SQUARE,
-        )
+    pub fn post_update(&mut self) {
+        self.position += self.velocity;
     }
 }
 
 pub struct GameScene {
     player: Player,
-    rects: Vec<Rect<f32, f32>>,
+    tilemap: Tilemap,
 }
 
 impl GameScene {
     pub fn new() -> GameScene {
+        let mut tilemap = Tilemap::new((40, 23), (32., 32.));
+        tilemap.set_tile((2, 5), Tile::Solid);
+        tilemap.set_tile((3, 5), Tile::Solid);
+        tilemap.set_tile((4, 5), Tile::Solid);
+        tilemap.set_tile((5, 5), Tile::Solid);
+        tilemap.set_tile((6, 5), Tile::Solid);
+        tilemap.set_tile((7, 5), Tile::Solid);
+        tilemap.set_tile((7, 4), Tile::Solid);
         GameScene {
             player: Player::new(),
-            rects: vec![
-                Rect::new(50., 500., 700., 100.),
-                Rect::new(350., 300., 150., 50.),
-                Rect::new(0., 0., 1000., 50.),
-            ],
+            tilemap: tilemap,
         }
     }
 }
@@ -116,14 +115,16 @@ impl Scene for GameScene {
             self.player.position.y = m_pos.y;
         }
         self.player.update(ctx);
-
-        for rect in &self.rects {
-            self.player.solve_collision_y(rect);
+        
+        let neighbors = self.tilemap.get_neigbor_rects(self.player.position + PLAYER_SQUARE / 2.);
+        for tile in &neighbors {
+            if matches!(tile.0, Tile::Solid) {
+                self.player.solve_collision_y(&tile.1);
+                self.player.solve_collision_x(&tile.1);
+            }
         }
 
-        for rect in &self.rects {
-            self.player.solve_collision_x(rect);
-        }
+        self.player.post_update();
 
         Ok(())
     }
@@ -136,15 +137,19 @@ impl Scene for GameScene {
                 .scale(Vec2::new(32., 32.))
                 .color(Color::RED),
         );
-        for rect in &self.rects {
-            assets.pixel.draw(
-                ctx,
-                DrawParams::new()
-                    .position(Vec2::new(rect.x, rect.y))
-                    .scale(Vec2::new(rect.w, rect.h))
-                    .color(Color::BLACK),
-            );
-        }
+        self.tilemap.run_for_each_tile(|(x, y), tile| {
+            if matches!(tile, Tile::Solid) {
+                let real_x = x as f32 * self.tilemap.tile_width();
+                let real_y = y as f32 * self.tilemap.tile_height();
+                assets.pixel.draw(
+                    ctx,
+                    DrawParams::new()
+                        .position(Vec2::from((real_x, real_y)))
+                        .scale(self.tilemap.tile_size())
+                        .color(Color::BLACK)
+                );
+            }
+        });
         Ok(())
     }
 }

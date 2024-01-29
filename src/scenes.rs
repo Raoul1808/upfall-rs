@@ -93,13 +93,13 @@ pub struct GameScene {
 impl GameScene {
     pub fn new() -> GameScene {
         let mut tilemap = Tilemap::new((40, 23), (32., 32.));
-        tilemap.set_tile((2, 5), Tile::Solid);
-        tilemap.set_tile((3, 5), Tile::Solid);
-        tilemap.set_tile((4, 5), Tile::Solid);
-        tilemap.set_tile((5, 5), Tile::Solid);
-        tilemap.set_tile((6, 5), Tile::Solid);
-        tilemap.set_tile((7, 5), Tile::Solid);
-        tilemap.set_tile((7, 4), Tile::Solid);
+        tilemap.set_tile_usize((2, 5), Tile::Solid);
+        tilemap.set_tile_usize((3, 5), Tile::Solid);
+        tilemap.set_tile_usize((4, 5), Tile::Solid);
+        tilemap.set_tile_usize((5, 5), Tile::Solid);
+        tilemap.set_tile_usize((6, 5), Tile::Solid);
+        tilemap.set_tile_usize((7, 5), Tile::Solid);
+        tilemap.set_tile_usize((7, 4), Tile::Solid);
         GameScene {
             player: Player::new(),
             tilemap: tilemap,
@@ -110,13 +110,15 @@ impl GameScene {
 impl Scene for GameScene {
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result {
         let m_pos = input::get_mouse_position(ctx);
-        if input::is_mouse_button_pressed(ctx, input::MouseButton::Left) {
-            self.player.position.x = m_pos.x;
-            self.player.position.y = m_pos.y;
+        if input::is_mouse_button_down(ctx, input::MouseButton::Left) {
+            self.tilemap.set_tile_f32(m_pos, Tile::Solid);
+        }
+        if input::is_mouse_button_down(ctx, input::MouseButton::Right) {
+            self.tilemap.set_tile_f32(m_pos, Tile::None);
         }
         self.player.update(ctx);
         
-        let neighbors = self.tilemap.get_neigbor_rects(self.player.position + PLAYER_SQUARE / 2.);
+        let neighbors = self.tilemap.get_neigbor_rects(self.player.position + PLAYER_SQUARE / 2.1);
         for tile in &neighbors {
             if matches!(tile.0, Tile::Solid) {
                 self.player.solve_collision_y(&tile.1);

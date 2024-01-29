@@ -44,7 +44,16 @@ impl Tilemap {
         (index % self.tilemap_size.x, index / self.tilemap_size.x)
     }
 
-    pub fn set_tile(&mut self, pos: (usize, usize), tile: Tile) {
+    pub fn set_tile_f32(&mut self, pos: Vec2<f32>, tile: Tile) {
+        if pos.x < 0. || pos.y < 0. {
+            return;
+        }
+        let x = (pos.x / self.tile_width()).trunc() as usize;
+        let y = (pos.y / self.tile_width()).trunc() as usize;
+        self.set_tile_usize((x, y), tile);
+    }
+
+    pub fn set_tile_usize(&mut self, pos: (usize, usize), tile: Tile) {
         let index = self.pos_to_index(pos);
         if let Some(t) = self.tiles.get_mut(index) {
             *t = tile;

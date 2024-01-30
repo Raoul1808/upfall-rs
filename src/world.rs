@@ -11,38 +11,72 @@ use crate::{
     Assets,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WorldMode {
+    Dark,
+    Light,
+}
+
+impl WorldMode {
+    pub fn next(&self) -> WorldMode {
+        match *self {
+            WorldMode::Dark => WorldMode::Light,
+            WorldMode::Light => WorldMode::Dark,
+        }
+    }
+
+    pub fn switch(&mut self) {
+        *self = self.next();
+    }
+}
+
 pub struct World {
     player: Player,
-    tilemap: Tilemap,
+    dark_tilemap: Tilemap,
+    light_tilemap: Tilemap,
+    mode: WorldMode,
     spawn_pos: Vec2<f32>,
-    flip_gravity: bool,
 }
 
 impl World {
     pub fn new(level: Level) -> World {
-        let Level { tilemap, spawn_pos } = level;
+        let Level {
+            dark_tilemap,
+            light_tilemap,
+            spawn_pos,
+        } = level;
         World {
             player: Player::new(spawn_pos),
-            tilemap,
+            dark_tilemap,
+            light_tilemap,
+            mode: WorldMode::Dark,
             spawn_pos,
-            flip_gravity: false,
         }
     }
 
     pub fn reset(&mut self) {
         self.player = Player::new(self.spawn_pos);
-        self.flip_gravity = false;
+        self.mode = WorldMode::Dark;
     }
 
     pub fn update(&mut self, ctx: &mut tetra::Context) {
         if input::is_key_pressed(ctx, Key::X) {
-            self.flip_gravity = !self.flip_gravity;
+            self.mode.switch();
         }
-        self.player.update(ctx, self.flip_gravity);
 
-        let neighbors = self
-            .tilemap
-            .get_neigbor_rects(self.player.position + Player::PLAYER_SQUARE / 2.1);
+        let flip_gravity = match self.mode {
+            WorldMode::Dark => false,
+            WorldMode::Light => true,
+        };
+        self.player.update(ctx, flip_gravity);
+
+        let tilemap = match self.mode {
+            WorldMode::Dark => &self.dark_tilemap,
+            WorldMode::Light => &self.light_tilemap,
+        };
+
+        let neighbors =
+            tilemap.get_neigbor_rects(self.player.position + Player::PLAYER_SQUARE / 2.1);
         for tile in &neighbors {
             if matches!(tile.0, Tile::Solid) {
                 self.player.solve_collision_y(&tile.1);
@@ -58,7 +92,7 @@ impl World {
             Player::PLAYER_SQUARE,
             Player::PLAYER_SQUARE,
         );
-        let tilemap_rect = self.tilemap.rect();
+        let tilemap_rect = tilemap.rect();
 
         if input::is_key_pressed(ctx, Key::R) || !tilemap_rect.collides_with_rect(player_rect) {
             self.reset();
@@ -73,15 +107,19 @@ impl World {
                 .scale(Vec2::new(32., 32.))
                 .color(Color::RED),
         );
-        self.tilemap.run_for_each_tile(|(x, y), tile| {
+        let tilemap = match self.mode {
+            WorldMode::Dark => &self.dark_tilemap,
+            WorldMode::Light => &self.light_tilemap,
+        };
+        tilemap.run_for_each_tile(|(x, y), tile| {
             if matches!(tile, Tile::Solid) {
-                let real_x = x as f32 * self.tilemap.tile_width();
-                let real_y = y as f32 * self.tilemap.tile_height();
+                let real_x = x as f32 * tilemap.tile_width();
+                let real_y = y as f32 * tilemap.tile_height();
                 assets.pixel.draw(
                     ctx,
                     DrawParams::new()
                         .position(Vec2::from((real_x, real_y)))
-                        .scale(self.tilemap.tile_size())
+                        .scale(tilemap.tile_size())
                         .color(Color::WHITE),
                 );
             }

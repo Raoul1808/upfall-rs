@@ -8,7 +8,7 @@ use crate::{
     level::Level,
     player::Player,
     tilemap::{Tile, Tilemap},
-    world::World,
+    world::{World, WorldMode},
     Assets, Transition,
 };
 
@@ -52,7 +52,9 @@ impl Scene for GameScene {
 }
 
 pub struct EditorScene {
-    tilemap: Tilemap,
+    dark_tilemap: Tilemap,
+    light_tilemap: Tilemap,
+    mode: WorldMode,
     spawn_pos: Vec2<f32>,
     mouse_pos: Vec2<f32>,
 }
@@ -60,7 +62,9 @@ pub struct EditorScene {
 impl EditorScene {
     pub fn new() -> EditorScene {
         EditorScene {
-            tilemap: Tilemap::new((40, 23), (32., 32.)),
+            dark_tilemap: Tilemap::new((40, 23), (32., 32.)),
+            light_tilemap: Tilemap::new((40, 23), (32., 32.)),
+            mode: WorldMode::Dark,
             spawn_pos: Vec2::default(),
             mouse_pos: Vec2::default(),
         }
@@ -74,21 +78,31 @@ impl Scene for EditorScene {
 
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition> {
         self.mouse_pos = input::get_mouse_position(ctx);
+        if input::is_key_pressed(ctx, Key::Tab) {
+            self.mode.switch();
+        }
+
+        let tilemap = match self.mode {
+            WorldMode::Dark => &mut self.dark_tilemap,
+            WorldMode::Light => &mut self.light_tilemap,
+        };
+
         if input::is_mouse_button_down(ctx, input::MouseButton::Left) {
-            self.tilemap.set_tile_f32(self.mouse_pos, Tile::Solid);
+            tilemap.set_tile_f32(self.mouse_pos, Tile::Solid);
         }
 
         if input::is_mouse_button_down(ctx, input::MouseButton::Right) {
-            self.tilemap.set_tile_f32(self.mouse_pos, Tile::None);
+            tilemap.set_tile_f32(self.mouse_pos, Tile::None);
         }
 
         if input::is_mouse_button_down(ctx, input::MouseButton::Middle) {
-            self.spawn_pos = self.tilemap.snap(self.mouse_pos);
+            self.spawn_pos = tilemap.snap(self.mouse_pos);
         }
 
         if input::is_key_pressed(ctx, Key::Enter) {
             let level = Level {
-                tilemap: self.tilemap.clone(),
+                dark_tilemap: self.dark_tilemap.clone(),
+                light_tilemap: self.light_tilemap.clone(),
                 spawn_pos: self.spawn_pos,
             };
             return Ok(Transition::Push(Box::new(GameScene::new(level))));
@@ -98,7 +112,11 @@ impl Scene for EditorScene {
     }
 
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
-        self.tilemap.run_for_each_tile(|(x, y), tile| {
+        let (dark_alpha, light_alpha) = match self.mode {
+            WorldMode::Dark => (1., 0.33),
+            WorldMode::Light => (0.33, 1.),
+        };
+        self.dark_tilemap.run_for_each_tile(|(x, y), tile| {
             if !matches!(tile, Tile::Solid) {
                 return;
             }
@@ -106,11 +124,26 @@ impl Scene for EditorScene {
                 ctx,
                 DrawParams::new()
                     .position(Vec2::new(
-                        x as f32 * self.tilemap.tile_width(),
-                        y as f32 * self.tilemap.tile_height(),
+                        x as f32 * self.dark_tilemap.tile_width(),
+                        y as f32 * self.dark_tilemap.tile_height(),
                     ))
-                    .scale(self.tilemap.tile_size())
-                    .color(Color::BLACK),
+                    .scale(self.dark_tilemap.tile_size())
+                    .color(Color::BLACK.with_alpha(dark_alpha)),
+            );
+        });
+        self.light_tilemap.run_for_each_tile(|(x, y), tile| {
+            if !matches!(tile, Tile::Solid) {
+                return;
+            }
+            assets.pixel.draw(
+                ctx,
+                DrawParams::new()
+                    .position(Vec2::new(
+                        x as f32 * self.light_tilemap.tile_width(),
+                        y as f32 * self.light_tilemap.tile_height(),
+                    ))
+                    .scale(self.light_tilemap.tile_size())
+                    .color(Color::BLACK.with_alpha(light_alpha)),
             );
         });
         assets.pixel.draw(
@@ -123,8 +156,8 @@ impl Scene for EditorScene {
         assets.pixel.draw(
             ctx,
             DrawParams::new()
-                .position(self.tilemap.snap(self.mouse_pos))
-                .scale(self.tilemap.tile_size())
+                .position(self.dark_tilemap.snap(self.mouse_pos))
+                .scale(self.dark_tilemap.tile_size())
                 .color(Color::WHITE.with_alpha(1. / 3.)),
         );
         Ok(())

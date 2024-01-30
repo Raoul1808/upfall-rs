@@ -1,7 +1,7 @@
 use tetra::{
     graphics::{Color, DrawParams},
     input::{self, Key},
-    math::Vec2,
+    math::{Rect, Vec2},
 };
 
 use crate::{
@@ -58,13 +58,15 @@ impl Scene for GameScene {
 
         self.player.post_update();
 
-        if input::is_key_pressed(ctx, Key::Escape) {
-            return Ok(Transition::Pop);
-        }
-
-        if input::is_key_pressed(ctx, Key::R) {
+        let player_rect = Rect::new(self.player.position.x, self.player.position.y, Player::PLAYER_SQUARE, Player::PLAYER_SQUARE);
+        let tilemap_rect = self.tilemap.rect();
+        if input::is_key_pressed(ctx, Key::R) || !tilemap_rect.collides_with_rect(player_rect) {
             self.reset();
             return Ok(Transition::None);
+        }
+
+        if input::is_key_pressed(ctx, Key::Escape) {
+            return Ok(Transition::Pop);
         }
 
         Ok(Transition::None)

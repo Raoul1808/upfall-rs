@@ -56,12 +56,11 @@ impl Player {
         if rect.collides_with_rect(next_hbox) {
             if self.velocity.y < 0. {
                 self.position.y = rect.y + rect.h;
-                self.velocity.y = 0.;
             }
             if self.velocity.y > 0. {
                 self.position.y = rect.y - Self::PLAYER_SQUARE;
-                self.velocity.y = 0.;
             }
+            self.velocity.y = 0.;
         }
     }
 
@@ -75,12 +74,11 @@ impl Player {
         if rect.collides_with_rect(next_hbox) {
             if self.velocity.x > 0. {
                 self.position.x = rect.x - Self::PLAYER_SQUARE;
-                self.velocity.x = 0.;
             }
             if self.velocity.x < 0. {
                 self.position.x = rect.x + rect.w;
-                self.velocity.x = 0.;
             }
+            self.velocity.x = 0.;
         }
     }
 

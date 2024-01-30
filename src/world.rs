@@ -76,7 +76,7 @@ impl World {
         };
 
         let neighbors =
-            tilemap.get_neigbor_rects(self.player.position + Player::PLAYER_SQUARE / 2.1);
+            tilemap.get_neigbor_rects(self.player.position + Player::PLAYER_SQUARE / 2.);
         for tile in &neighbors {
             if matches!(tile.0, Tile::Solid) {
                 self.player.solve_collision_y(&tile.1);

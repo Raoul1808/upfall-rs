@@ -78,8 +78,8 @@ impl Tilemap {
     }
 
     pub fn get_neigbor_rects(&self, pos: Vec2<f32>) -> Vec<(Tile, Rect<f32, f32>)> {
-        let x = (pos.x / self.tile_size.x).round() as usize;
-        let y = (pos.y / self.tile_size.y).round() as usize;
+        let x = (pos.x / self.tile_width()).trunc() as usize;
+        let y = (pos.y / self.tile_height()).trunc() as usize;
         let mut vec = vec![];
         for n in 0..9 {
             let dx = n % 3 - 1_i32;

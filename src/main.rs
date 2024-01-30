@@ -8,6 +8,7 @@ mod level;
 mod player;
 mod scenes;
 mod tilemap;
+mod world;
 
 pub struct Assets {
     pixel: Texture,

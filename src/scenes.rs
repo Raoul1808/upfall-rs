@@ -1,11 +1,11 @@
 use tetra::{
     graphics::{Color, DrawParams},
     input::{self, Key},
-    math::{Rect, Vec2},
+    math::Vec2,
 };
 
 use crate::{
-    level::Level, player::Player, tilemap::{Tile, Tilemap}, Assets, Transition
+    level::Level, player::Player, tilemap::{Tile, Tilemap}, world::World, Assets, Transition
 };
 
 pub trait Scene {
@@ -15,29 +15,14 @@ pub trait Scene {
 }
 
 pub struct GameScene {
-    player: Player,
-    tilemap: Tilemap,
-    spawn_pos: Vec2<f32>,
-    flip_gravity: bool,
+    world: World,
 }
 
 impl GameScene {
     pub fn new(level: Level) -> GameScene {
-        let Level {
-            tilemap,
-            spawn_pos
-        } = level;
         GameScene {
-            player: Player::new(spawn_pos),
-            tilemap,
-            spawn_pos,
-            flip_gravity: false,
+            world: World::new(level),
         }
-    }
-
-    fn reset(&mut self) {
-        self.player = Player::new(self.spawn_pos);
-        self.flip_gravity = false;
     }
 }
 
@@ -47,58 +32,17 @@ impl Scene for GameScene {
     }
 
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition> {
-        if input::is_key_pressed(ctx, Key::X) {
-            self.flip_gravity = !self.flip_gravity;
-        }
-        self.player.update(ctx, self.flip_gravity);
-
-        let neighbors = self
-            .tilemap
-            .get_neigbor_rects(self.player.position + Player::PLAYER_SQUARE / 2.1);
-        for tile in &neighbors {
-            if matches!(tile.0, Tile::Solid) {
-                self.player.solve_collision_y(&tile.1);
-                self.player.solve_collision_x(&tile.1);
-            }
-        }
-
-        self.player.post_update();
-
-        let player_rect = Rect::new(self.player.position.x, self.player.position.y, Player::PLAYER_SQUARE, Player::PLAYER_SQUARE);
-        let tilemap_rect = self.tilemap.rect();
-        if input::is_key_pressed(ctx, Key::R) || !tilemap_rect.collides_with_rect(player_rect) {
-            self.reset();
-            return Ok(Transition::None);
-        }
-
         if input::is_key_pressed(ctx, Key::Escape) {
             return Ok(Transition::Pop);
         }
+
+        self.world.update(ctx);
 
         Ok(Transition::None)
     }
 
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
-        assets.pixel.draw(
-            ctx,
-            DrawParams::new()
-                .position(self.player.position)
-                .scale(Vec2::new(32., 32.))
-                .color(Color::RED),
-        );
-        self.tilemap.run_for_each_tile(|(x, y), tile| {
-            if matches!(tile, Tile::Solid) {
-                let real_x = x as f32 * self.tilemap.tile_width();
-                let real_y = y as f32 * self.tilemap.tile_height();
-                assets.pixel.draw(
-                    ctx,
-                    DrawParams::new()
-                        .position(Vec2::from((real_x, real_y)))
-                        .scale(self.tilemap.tile_size())
-                        .color(Color::WHITE),
-                );
-            }
-        });
+        self.world.draw(ctx, assets);
         Ok(())
     }
 }

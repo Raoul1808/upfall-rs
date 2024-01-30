@@ -63,8 +63,12 @@ impl Scene for GameScene {
     }
 
     fn canvas_draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
-        assets.shader.set_uniform(ctx, "u_color_a", self.color_a.with_alpha(1.));
-        assets.shader.set_uniform(ctx, "u_color_b", self.color_b.with_alpha(1.));
+        assets
+            .shader
+            .set_uniform(ctx, "u_color_a", self.color_a.with_alpha(1.));
+        assets
+            .shader
+            .set_uniform(ctx, "u_color_b", self.color_b.with_alpha(1.));
         self.world.draw(ctx, assets);
         Ok(())
     }

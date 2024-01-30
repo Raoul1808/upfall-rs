@@ -7,11 +7,11 @@ use tetra::{
 use crate::{
     player::Player,
     tilemap::{Tile, Tilemap},
-    Assets,
+    Assets, Transition,
 };
 
 pub trait Scene {
-    fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result;
+    fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition>;
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result;
 }
 
@@ -40,7 +40,7 @@ impl GameScene {
 }
 
 impl Scene for GameScene {
-    fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result {
+    fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition> {
         self.mouse_pos = input::get_mouse_position(ctx);
         if input::is_mouse_button_down(ctx, input::MouseButton::Left) {
             self.tilemap.set_tile_f32(self.mouse_pos, Tile::Solid);
@@ -62,7 +62,7 @@ impl Scene for GameScene {
 
         self.player.post_update();
 
-        Ok(())
+        Ok(Transition::None)
     }
 
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {

@@ -2,6 +2,7 @@ use std::cmp::max;
 
 use tetra::math::{Rect, Vec2};
 
+#[derive(Clone)]
 pub struct Tilemap {
     tiles: Vec<Tile>,
     tilemap_size: Vec2<usize>,

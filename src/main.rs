@@ -1,14 +1,14 @@
 use scenes::{GameScene, Scene};
 use tetra::{
     graphics::{self, Color, Texture},
-    ContextBuilder, State,
+    window, ContextBuilder, State,
 };
 
 mod player;
 mod scenes;
 mod tilemap;
 
-struct Assets {
+pub struct Assets {
     pixel: Texture,
 }
 
@@ -24,6 +24,12 @@ impl Assets {
             )?,
         })
     }
+}
+
+pub enum Transition {
+    None,
+    Push(Box<dyn Scene>),
+    Pop,
 }
 
 struct GameState {
@@ -42,8 +48,17 @@ impl GameState {
 
 impl State for GameState {
     fn update(&mut self, ctx: &mut tetra::Context) -> Result<(), tetra::TetraError> {
-        if let Some(active_scene) = self.scenes.last_mut() {
-            active_scene.update(ctx)?;
+        match self.scenes.last_mut() {
+            Some(active_scene) => match active_scene.update(ctx)? {
+                Transition::None => {}
+                Transition::Push(scene) => {
+                    self.scenes.push(scene);
+                }
+                Transition::Pop => {
+                    self.scenes.pop();
+                }
+            },
+            None => window::quit(ctx),
         }
         Ok(())
     }

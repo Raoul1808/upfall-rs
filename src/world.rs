@@ -1,5 +1,5 @@
 use tetra::{
-    graphics::{Color, DrawParams},
+    graphics::{self, BlendState, Color, DrawParams},
     input::{self, Key},
     math::{Rect, Vec2},
 };
@@ -100,29 +100,45 @@ impl World {
     }
 
     pub fn draw(&self, ctx: &mut tetra::Context, assets: &Assets) {
+        graphics::set_blend_state(ctx, BlendState::add(false));
+        assets.shader.set_uniform(
+            ctx,
+            "u_flip",
+            if self.mode == WorldMode::Light { 1 } else { 0 },
+        );
         assets.pixel.draw(
             ctx,
             DrawParams::new()
                 .position(self.player.position)
                 .scale(Vec2::new(32., 32.))
-                .color(Color::RED),
+                .color(Color::WHITE),
         );
-        let tilemap = match self.mode {
-            WorldMode::Dark => &self.dark_tilemap,
-            WorldMode::Light => &self.light_tilemap,
-        };
-        tilemap.run_for_each_tile(|(x, y), tile| {
+        self.dark_tilemap.run_for_each_tile(|(x, y), tile| {
             if matches!(tile, Tile::Solid) {
-                let real_x = x as f32 * tilemap.tile_width();
-                let real_y = y as f32 * tilemap.tile_height();
+                let real_x = x as f32 * self.dark_tilemap.tile_width();
+                let real_y = y as f32 * self.dark_tilemap.tile_height();
                 assets.pixel.draw(
                     ctx,
                     DrawParams::new()
                         .position(Vec2::from((real_x, real_y)))
-                        .scale(tilemap.tile_size())
-                        .color(Color::WHITE),
+                        .scale(self.dark_tilemap.tile_size())
+                        .color(Color::RED),
                 );
             }
         });
+        self.light_tilemap.run_for_each_tile(|(x, y), tile| {
+            if matches!(tile, Tile::Solid) {
+                let real_x = x as f32 * self.light_tilemap.tile_width();
+                let real_y = y as f32 * self.light_tilemap.tile_height();
+                assets.pixel.draw(
+                    ctx,
+                    DrawParams::new()
+                        .position(Vec2::from((real_x, real_y)))
+                        .scale(self.light_tilemap.tile_size())
+                        .color(Color::BLUE),
+                );
+            }
+        });
+        graphics::reset_blend_state(ctx);
     }
 }

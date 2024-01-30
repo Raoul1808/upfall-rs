@@ -1,6 +1,7 @@
 use scenes::{EditorScene, Scene};
 use tetra::{
-    graphics::{self, Color, Texture},
+    graphics::{self, Canvas, Color, Shader, Texture},
+    math::Vec2,
     window, ContextBuilder, State,
 };
 
@@ -12,6 +13,7 @@ mod world;
 
 pub struct Assets {
     pixel: Texture,
+    shader: Shader,
 }
 
 impl Assets {
@@ -24,6 +26,7 @@ impl Assets {
                 graphics::TextureFormat::Rgba8,
                 &[255, 255, 255, 255],
             )?,
+            shader: Shader::from_fragment_file(ctx, "res/shader.frag")?,
         })
     }
 }
@@ -37,6 +40,7 @@ pub enum Transition {
 struct GameState {
     assets: Assets,
     scenes: Vec<Box<dyn Scene>>,
+    canvas: Canvas,
 }
 
 impl GameState {
@@ -44,6 +48,7 @@ impl GameState {
         Ok(GameState {
             assets: Assets::load(ctx)?,
             scenes: vec![Box::new(EditorScene::new())],
+            canvas: Canvas::new(ctx, 1280, 720)?,
         })
     }
 }
@@ -68,8 +73,17 @@ impl State for GameState {
     fn draw(&mut self, ctx: &mut tetra::Context) -> tetra::Result {
         match self.scenes.last_mut() {
             Some(active_scene) => {
+                graphics::set_canvas(ctx, &self.canvas);
                 graphics::clear(ctx, active_scene.clear_color());
-                active_scene.draw(ctx, &self.assets)?;
+                active_scene.canvas_draw(ctx, &self.assets)?;
+                graphics::reset_canvas(ctx);
+                if active_scene.use_shader() {
+                    graphics::set_shader(ctx, &self.assets.shader);
+                }
+                graphics::clear(ctx, Color::BLACK);
+                self.canvas.draw(ctx, Vec2::zero());
+                graphics::reset_shader(ctx);
+                active_scene.screen_draw(ctx, &self.assets)?;
             }
             None => {
                 graphics::clear(ctx, Color::BLACK);

@@ -12,10 +12,19 @@ use crate::{
     Assets, Transition,
 };
 
+#[allow(unused_variables)]
 pub trait Scene {
+    fn use_shader(&self) -> bool {
+        false
+    }
     fn clear_color(&self) -> Color;
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition>;
-    fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result;
+    fn canvas_draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
+        Ok(())
+    }
+    fn screen_draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
+        Ok(())
+    }
 }
 
 pub struct GameScene {
@@ -31,6 +40,10 @@ impl GameScene {
 }
 
 impl Scene for GameScene {
+    fn use_shader(&self) -> bool {
+        true
+    }
+
     fn clear_color(&self) -> Color {
         Color::BLACK
     }
@@ -45,7 +58,7 @@ impl Scene for GameScene {
         Ok(Transition::None)
     }
 
-    fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
+    fn canvas_draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
         self.world.draw(ctx, assets);
         Ok(())
     }
@@ -111,7 +124,7 @@ impl Scene for EditorScene {
         Ok(Transition::None)
     }
 
-    fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
+    fn screen_draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
         let (dark_alpha, light_alpha) = match self.mode {
             WorldMode::Dark => (1., 0.33),
             WorldMode::Light => (0.33, 1.),

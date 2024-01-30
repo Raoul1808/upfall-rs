@@ -8,6 +8,8 @@ uniform vec2 u_resolution;
 uniform float u_circle_radius;
 uniform vec2 u_circle_pos;
 uniform int u_flip;
+uniform vec4 u_color_a;
+uniform vec4 u_color_b;
 
 out vec4 o_color;
 
@@ -21,5 +23,6 @@ void main() {
     uv.y = 1.0 - uv.y;
     vec4 col = v_color * texture(u_texture, v_uv);
     float circ = circle(uv, u_circle_pos, u_circle_radius);
-    o_color = circ > 0.5 ? vec4(1.0) - vec4(col.bbb, 0.0) : vec4(col.rrr, 1.0);
+    float grayscale = circ > 0.5 ? 1.0 - col.b : col.r;
+    o_color = grayscale > 0.5 ? vec4(u_color_b.rgb, 1.0) : vec4(u_color_a.rgb, 1.0);
 }

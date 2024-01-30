@@ -29,12 +29,16 @@ pub trait Scene {
 
 pub struct GameScene {
     world: World,
+    color_a: Color,
+    color_b: Color,
 }
 
 impl GameScene {
     pub fn new(level: Level) -> GameScene {
         GameScene {
             world: World::new(level),
+            color_a: Color::BLUE,
+            color_b: Color::rgb8(100, 149, 237),
         }
     }
 }
@@ -59,6 +63,8 @@ impl Scene for GameScene {
     }
 
     fn canvas_draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
+        assets.shader.set_uniform(ctx, "u_color_a", self.color_a.with_alpha(1.));
+        assets.shader.set_uniform(ctx, "u_color_b", self.color_b.with_alpha(1.));
         self.world.draw(ctx, assets);
         Ok(())
     }

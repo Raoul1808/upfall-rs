@@ -17,6 +17,7 @@ pub trait Scene {
 pub struct GameScene {
     player: Player,
     tilemap: Tilemap,
+    spawn_pos: Vec2<f32>,
 }
 
 impl GameScene {
@@ -28,7 +29,12 @@ impl GameScene {
         GameScene {
             player: Player::new(spawn_pos),
             tilemap,
+            spawn_pos,
         }
+    }
+
+    fn reset(&mut self) {
+        self.player = Player::new(self.spawn_pos);
     }
 }
 
@@ -54,6 +60,11 @@ impl Scene for GameScene {
 
         if input::is_key_pressed(ctx, Key::Escape) {
             return Ok(Transition::Pop);
+        }
+
+        if input::is_key_pressed(ctx, Key::R) {
+            self.reset();
+            return Ok(Transition::None);
         }
 
         Ok(Transition::None)

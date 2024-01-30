@@ -40,15 +40,18 @@ pub enum Transition {
 struct GameState {
     assets: Assets,
     scenes: Vec<Box<dyn Scene>>,
+    resolution: Vec2<i32>,
     canvas: Canvas,
 }
 
 impl GameState {
     fn new(ctx: &mut tetra::Context) -> tetra::Result<GameState> {
+        let resolution = Vec2::new(1280, 720);
         Ok(GameState {
             assets: Assets::load(ctx)?,
             scenes: vec![Box::new(EditorScene::new())],
-            canvas: Canvas::new(ctx, 1280, 720)?,
+            resolution,
+            canvas: Canvas::new(ctx, resolution.x, resolution.y)?,
         })
     }
 }
@@ -79,6 +82,9 @@ impl State for GameState {
                 graphics::reset_canvas(ctx);
                 if active_scene.use_shader() {
                     graphics::set_shader(ctx, &self.assets.shader);
+                    self.assets
+                        .shader
+                        .set_uniform(ctx, "u_resolution", self.resolution.as_());
                 }
                 graphics::clear(ctx, Color::BLACK);
                 self.canvas.draw(ctx, Vec2::zero());

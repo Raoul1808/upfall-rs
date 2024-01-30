@@ -103,8 +103,17 @@ impl World {
         graphics::set_blend_state(ctx, BlendState::add(false));
         assets.shader.set_uniform(
             ctx,
-            "u_flip",
-            if self.mode == WorldMode::Light { 1 } else { 0 },
+            "u_circle_radius",
+            if self.mode == WorldMode::Light {
+                50.0
+            } else {
+                0.0
+            },
+        );
+        assets.shader.set_uniform(
+            ctx,
+            "u_circle_pos",
+            self.player.position + Player::PLAYER_SQUARE / 2.,
         );
         assets.pixel.draw(
             ctx,

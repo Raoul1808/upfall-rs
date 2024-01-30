@@ -18,6 +18,7 @@ pub struct GameScene {
     player: Player,
     tilemap: Tilemap,
     spawn_pos: Vec2<f32>,
+    flip_gravity: bool,
 }
 
 impl GameScene {
@@ -30,11 +31,13 @@ impl GameScene {
             player: Player::new(spawn_pos),
             tilemap,
             spawn_pos,
+            flip_gravity: false,
         }
     }
 
     fn reset(&mut self) {
         self.player = Player::new(self.spawn_pos);
+        self.flip_gravity = false;
     }
 }
 
@@ -44,7 +47,10 @@ impl Scene for GameScene {
     }
 
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition> {
-        self.player.update(ctx);
+        if input::is_key_pressed(ctx, Key::X) {
+            self.flip_gravity = !self.flip_gravity;
+        }
+        self.player.update(ctx, self.flip_gravity);
 
         let neighbors = self
             .tilemap

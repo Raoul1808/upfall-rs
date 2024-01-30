@@ -19,11 +19,13 @@ impl Player {
         }
     }
 
-    pub fn update(&mut self, ctx: &mut tetra::Context) {
+    pub fn update(&mut self, ctx: &mut tetra::Context, flip: bool) {
         const MAX_FALL_SPEED: f32 = 15.;
         const GRAVITY: f32 = 0.7;
         const JUMP_FORCE: f32 = 11.;
         const WALK_SPEED: f32 = 4.;
+
+        let y_direction = if flip { -1.0 } else { 1.0 };
 
         let mut x_vel = 0.;
         if input::is_key_down(ctx, Key::Left) {
@@ -34,13 +36,13 @@ impl Player {
         }
         self.velocity.x = x_vel;
 
-        self.velocity.y += GRAVITY;
-        if self.velocity.y > MAX_FALL_SPEED {
-            self.velocity.y = MAX_FALL_SPEED;
+        self.velocity.y += GRAVITY * y_direction;
+        if self.velocity.y.abs() > MAX_FALL_SPEED {
+            self.velocity.y = MAX_FALL_SPEED * y_direction;
         }
 
         if input::is_key_pressed(ctx, Key::Space) {
-            self.velocity.y = -JUMP_FORCE;
+            self.velocity.y = -JUMP_FORCE * y_direction;
         }
     }
 

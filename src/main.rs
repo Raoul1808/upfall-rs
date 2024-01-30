@@ -1,9 +1,10 @@
-use scenes::{GameScene, Scene};
+use scenes::{EditorScene, Scene};
 use tetra::{
     graphics::{self, Color, Texture},
     window, ContextBuilder, State,
 };
 
+mod level;
 mod player;
 mod scenes;
 mod tilemap;
@@ -41,7 +42,7 @@ impl GameState {
     fn new(ctx: &mut tetra::Context) -> tetra::Result<GameState> {
         Ok(GameState {
             assets: Assets::load(ctx)?,
-            scenes: vec![Box::new(GameScene::new())],
+            scenes: vec![Box::new(EditorScene::new())],
         })
     }
 }
@@ -64,9 +65,14 @@ impl State for GameState {
     }
 
     fn draw(&mut self, ctx: &mut tetra::Context) -> tetra::Result {
-        graphics::clear(ctx, Color::rgb8(100, 149, 237));
-        if let Some(active_scene) = self.scenes.last_mut() {
-            active_scene.draw(ctx, &self.assets)?;
+        match self.scenes.last_mut() {
+            Some(active_scene) => {
+                graphics::clear(ctx, active_scene.clear_color());
+                active_scene.draw(ctx, &self.assets)?;
+            }
+            None => {
+                graphics::clear(ctx, Color::BLACK);
+            }
         }
         Ok(())
     }

@@ -12,9 +12,9 @@ pub struct Player {
 impl Player {
     pub const PLAYER_SQUARE: f32 = 32.;
 
-    pub fn new() -> Player {
+    pub fn new(spawn_pos: Vec2<f32>) -> Player {
         Player {
-            position: Vec2::new(100., 100.),
+            position: spawn_pos,
             velocity: Vec2::default(),
         }
     }

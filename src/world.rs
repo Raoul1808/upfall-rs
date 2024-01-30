@@ -1,6 +1,15 @@
-use tetra::{graphics::{Color, DrawParams}, input::{self, Key}, math::{Rect, Vec2}};
+use tetra::{
+    graphics::{Color, DrawParams},
+    input::{self, Key},
+    math::{Rect, Vec2},
+};
 
-use crate::{level::Level, player::Player, tilemap::{Tile, Tilemap}, Assets};
+use crate::{
+    level::Level,
+    player::Player,
+    tilemap::{Tile, Tilemap},
+    Assets,
+};
 
 pub struct World {
     player: Player,
@@ -11,10 +20,7 @@ pub struct World {
 
 impl World {
     pub fn new(level: Level) -> World {
-        let Level {
-            tilemap,
-            spawn_pos,
-        } = level;
+        let Level { tilemap, spawn_pos } = level;
         World {
             player: Player::new(spawn_pos),
             tilemap,
@@ -46,7 +52,12 @@ impl World {
 
         self.player.post_update();
 
-        let player_rect = Rect::new(self.player.position.x, self.player.position.y, Player::PLAYER_SQUARE, Player::PLAYER_SQUARE);
+        let player_rect = Rect::new(
+            self.player.position.x,
+            self.player.position.y,
+            Player::PLAYER_SQUARE,
+            Player::PLAYER_SQUARE,
+        );
         let tilemap_rect = self.tilemap.rect();
 
         if input::is_key_pressed(ctx, Key::R) || !tilemap_rect.collides_with_rect(player_rect) {

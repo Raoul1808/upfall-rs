@@ -38,7 +38,12 @@ impl Tilemap {
     }
 
     pub fn rect(&self) -> Rect<f32, f32> {
-        Rect::new(0., 0., self.tilemap_size.x as f32 * self.tile_width(), self.tilemap_size.y as f32 * self.tile_height())
+        Rect::new(
+            0.,
+            0.,
+            self.tilemap_size.x as f32 * self.tile_width(),
+            self.tilemap_size.y as f32 * self.tile_height(),
+        )
     }
 
     fn pos_to_index(&self, pos: (usize, usize)) -> usize {

@@ -1,15 +1,16 @@
 use std::cmp::max;
 
+use serde::{Deserialize, Serialize};
 use tetra::math::{Rect, Vec2};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Tilemap {
     tiles: Vec<Tile>,
     tilemap_size: Vec2<usize>,
     tile_size: Vec2<f32>,
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub enum Tile {
     #[default]
     None,

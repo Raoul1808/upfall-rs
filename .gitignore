@@ -22,3 +22,7 @@ Cargo.lock
 ### Custom
 # VSCode Leveling extension thing
 .clvls
+
+# Upfall and Upfall-rs levels
+*.umd
+*.umdx

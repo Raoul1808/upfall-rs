@@ -131,6 +131,29 @@ impl Scene for EditorScene {
             return Ok(Transition::Push(Box::new(GameScene::new(level))));
         }
 
+        if input::is_key_down(ctx, Key::LeftCtrl) {
+            if input::is_key_pressed(ctx, Key::S) {
+                let level = Level {
+                    dark_tilemap: self.dark_tilemap.clone(),
+                    light_tilemap: self.light_tilemap.clone(),
+                    spawn_pos: self.spawn_pos,
+                };
+                let res = level.save("level.umdx");
+                println!("{:?}", res.err());
+            }
+
+            if input::is_key_pressed(ctx, Key::O) {
+                match Level::load("level.umdx") {
+                    Ok(l) => {
+                        self.dark_tilemap = l.dark_tilemap;
+                        self.light_tilemap = l.light_tilemap;
+                        self.spawn_pos = l.spawn_pos;
+                    }
+                    Err(e) => println!("{:?}", e),
+                }
+            }
+        }
+
         Ok(Transition::None)
     }
 

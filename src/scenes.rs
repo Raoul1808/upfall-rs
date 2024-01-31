@@ -7,7 +7,7 @@ use tetra::{
 use crate::{
     level::Level,
     player::Player,
-    tilemap::{Tile, Tilemap},
+    tilemap::{Facing, Tile, Tilemap},
     world::{World, WorldMode},
     Assets, Transition,
 };
@@ -80,6 +80,8 @@ pub struct EditorScene {
     mode: WorldMode,
     spawn_pos: Vec2<f32>,
     mouse_pos: Vec2<f32>,
+    facing: Facing,
+    tile: Tile,
 }
 
 impl EditorScene {
@@ -90,6 +92,8 @@ impl EditorScene {
             mode: WorldMode::Dark,
             spawn_pos: Vec2::default(),
             mouse_pos: Vec2::default(),
+            facing: Facing::Up,
+            tile: Tile::Solid,
         }
     }
 }
@@ -104,6 +108,31 @@ impl Scene for EditorScene {
         if input::is_key_pressed(ctx, Key::Tab) {
             self.mode.switch();
         }
+        if input::is_key_pressed(ctx, Key::Num1) {
+            println!("solid!");
+            self.tile = Tile::Solid;
+        }
+        if input::is_key_pressed(ctx, Key::Num2) {
+            println!("spike!");
+            self.tile = Tile::Spike(self.facing);
+        }
+
+        if input::is_key_pressed(ctx, Key::Up) {
+            self.facing = Facing::Up;
+            self.tile.set_facing(self.facing);
+        }
+        if input::is_key_pressed(ctx, Key::Down) {
+            self.facing = Facing::Down;
+            self.tile.set_facing(self.facing);
+        }
+        if input::is_key_pressed(ctx, Key::Left) {
+            self.facing = Facing::Left;
+            self.tile.set_facing(self.facing);
+        }
+        if input::is_key_pressed(ctx, Key::Right) {
+            self.facing = Facing::Right;
+            self.tile.set_facing(self.facing);
+        }
 
         let tilemap = match self.mode {
             WorldMode::Dark => &mut self.dark_tilemap,
@@ -111,7 +140,7 @@ impl Scene for EditorScene {
         };
 
         if input::is_mouse_button_down(ctx, input::MouseButton::Left) {
-            tilemap.set_tile_f32(self.mouse_pos, Tile::Solid);
+            tilemap.set_tile_f32(self.mouse_pos, self.tile);
         }
 
         if input::is_mouse_button_down(ctx, input::MouseButton::Right) {
@@ -163,34 +192,32 @@ impl Scene for EditorScene {
             WorldMode::Light => (0.33, 1.),
         };
         self.dark_tilemap.run_for_each_tile(|(x, y), tile| {
-            if !matches!(tile, Tile::Solid) {
-                return;
+            if !matches!(tile, Tile::None) {
+                let size = self.dark_tilemap.tile_size();
+                let pos = Vec2::new(x as f32, y as f32) * size;
+                let hb = tile.hbox(pos, size);
+                assets.pixel.draw(
+                    ctx,
+                    DrawParams::new()
+                        .position(Vec2::new(hb.x, hb.y))
+                        .scale(Vec2::new(hb.w, hb.h))
+                        .color(Color::BLACK.with_alpha(dark_alpha)),
+                );
             }
-            assets.pixel.draw(
-                ctx,
-                DrawParams::new()
-                    .position(Vec2::new(
-                        x as f32 * self.dark_tilemap.tile_width(),
-                        y as f32 * self.dark_tilemap.tile_height(),
-                    ))
-                    .scale(self.dark_tilemap.tile_size())
-                    .color(Color::BLACK.with_alpha(dark_alpha)),
-            );
         });
         self.light_tilemap.run_for_each_tile(|(x, y), tile| {
-            if !matches!(tile, Tile::Solid) {
-                return;
+            if !matches!(tile, Tile::None) {
+                let size = self.light_tilemap.tile_size();
+                let pos = Vec2::new(x as f32, y as f32) * size;
+                let hb = tile.hbox(pos, size);
+                assets.pixel.draw(
+                    ctx,
+                    DrawParams::new()
+                        .position(Vec2::new(hb.x, hb.y))
+                        .scale(Vec2::new(hb.w, hb.h))
+                        .color(Color::BLACK.with_alpha(light_alpha)),
+                );
             }
-            assets.pixel.draw(
-                ctx,
-                DrawParams::new()
-                    .position(Vec2::new(
-                        x as f32 * self.light_tilemap.tile_width(),
-                        y as f32 * self.light_tilemap.tile_height(),
-                    ))
-                    .scale(self.light_tilemap.tile_size())
-                    .color(Color::BLACK.with_alpha(light_alpha)),
-            );
         });
         assets.pixel.draw(
             ctx,

@@ -82,6 +82,15 @@ impl Player {
         }
     }
 
+    pub fn get_hbox(&self) -> Rect<f32, f32> {
+        Rect::new(
+            self.position.x,
+            self.position.y,
+            Self::PLAYER_SQUARE,
+            Self::PLAYER_SQUARE,
+        )
+    }
+
     pub fn post_update(&mut self) {
         self.position += self.velocity;
     }

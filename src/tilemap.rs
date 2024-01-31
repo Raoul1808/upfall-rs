@@ -15,6 +15,64 @@ pub enum Tile {
     #[default]
     None,
     Solid,
+    Spike(Facing),
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+pub enum Facing {
+    #[default]
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl Tile {
+    pub fn hbox(&self, pos: Vec2<f32>, size: Vec2<f32>) -> Rect<f32, f32> {
+        const SPIKE_FRONT_GAP: f32 = 9. / 16.;
+        const SPIKE_THICKNESS: f32 = 1. - SPIKE_FRONT_GAP;
+        const SPIKE_SIDE_GAP: f32 = 1. / 16.;
+        const SPIKE_LENGTH: f32 = 14. / 16.;
+        match *self {
+            Tile::None => Rect::default(),
+            Tile::Solid => Rect::new(pos.x, pos.y, size.x, size.y),
+            Tile::Spike(dir) => match dir {
+                Facing::Up => Rect::new(
+                    pos.x + size.x * SPIKE_SIDE_GAP,
+                    pos.y + size.y * SPIKE_FRONT_GAP,
+                    size.x * SPIKE_LENGTH,
+                    size.y * SPIKE_THICKNESS,
+                ),
+                Facing::Down => Rect::new(
+                    pos.x + size.x * SPIKE_SIDE_GAP,
+                    pos.y,
+                    size.x * SPIKE_LENGTH,
+                    size.y * SPIKE_THICKNESS,
+                ),
+                Facing::Left => Rect::new(
+                    pos.x + size.x * SPIKE_FRONT_GAP,
+                    pos.y + size.y * SPIKE_SIDE_GAP,
+                    size.x * SPIKE_THICKNESS,
+                    size.y * SPIKE_LENGTH,
+                ),
+                Facing::Right => Rect::new(
+                    pos.x,
+                    pos.y + size.y * SPIKE_SIDE_GAP,
+                    size.x * SPIKE_THICKNESS,
+                    size.y * SPIKE_LENGTH,
+                ),
+            },
+        }
+    }
+
+    pub fn set_facing(&mut self, facing: Facing) {
+        match *self {
+            Tile::Spike(ref mut f) => {
+                *f = facing;
+            }
+            _ => {}
+        }
+    }
 }
 
 impl Tilemap {
@@ -78,7 +136,7 @@ impl Tilemap {
         }
     }
 
-    pub fn get_neigbor_rects(&self, pos: Vec2<f32>) -> Vec<(Tile, Rect<f32, f32>)> {
+    pub fn get_neigbor_tile_hboxes(&self, pos: Vec2<f32>) -> Vec<(Tile, Rect<f32, f32>)> {
         let x = (pos.x / self.tile_width()).trunc() as usize;
         let y = (pos.y / self.tile_height()).trunc() as usize;
         let mut vec = vec![];
@@ -87,17 +145,13 @@ impl Tilemap {
             let dy = n / 3 - 1_i32;
             let ix = max(x as i32 + dx, 0) as usize;
             let iy = max(y as i32 + dy, 0) as usize;
-            let fx = (x as i32 + dx) as f32;
-            let fy = (y as i32 + dy) as f32;
-            let rect = Rect::new(
-                fx * self.tile_width(),
-                fy * self.tile_height(),
-                self.tile_width(),
-                self.tile_height(),
-            );
             if let Some(t) = self.tiles.get(self.pos_to_index((ix, iy))) {
-                let distance = pos.distance(rect.center());
-                vec.push((distance, *t, rect));
+                let fx = (x as i32 + dx) as f32;
+                let fy = (y as i32 + dy) as f32;
+                let pos = Vec2::new(fx, fy) * self.tile_size;
+                let hbox = t.hbox(pos, self.tile_size);
+                let distance = pos.distance(hbox.center());
+                vec.push((distance, *t, hbox));
             }
         }
         vec.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());

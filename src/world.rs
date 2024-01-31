@@ -76,15 +76,28 @@ impl World {
         };
 
         let neighbors =
-            tilemap.get_neigbor_rects(self.player.position + Player::PLAYER_SQUARE / 2.);
-        for tile in &neighbors {
-            if matches!(tile.0, Tile::Solid) {
-                self.player.solve_collision_y(&tile.1);
-                self.player.solve_collision_x(&tile.1);
+            tilemap.get_neigbor_tile_hboxes(self.player.position + Player::PLAYER_SQUARE / 2.);
+        let mut spikes = vec![];
+        for (tile, rect) in &neighbors {
+            match tile {
+                Tile::None => continue,
+                Tile::Solid => {
+                    self.player.solve_collision_y(rect);
+                    self.player.solve_collision_x(rect);
+                }
+                Tile::Spike(_) => {
+                    spikes.push(rect);
+                }
             }
         }
 
         self.player.post_update();
+
+        let plr_rect = self.player.get_hbox();
+        if spikes.into_iter().any(|s| s.collides_with_rect(plr_rect)) {
+            self.reset();
+            return;
+        }
 
         let player_rect = Rect::new(
             self.player.position.x,
@@ -123,27 +136,29 @@ impl World {
                 .color(Color::WHITE),
         );
         self.dark_tilemap.run_for_each_tile(|(x, y), tile| {
-            if matches!(tile, Tile::Solid) {
-                let real_x = x as f32 * self.dark_tilemap.tile_width();
-                let real_y = y as f32 * self.dark_tilemap.tile_height();
+            if !matches!(tile, Tile::None) {
+                let size = self.dark_tilemap.tile_size();
+                let pos = Vec2::new(x as f32, y as f32) * size;
+                let hb = tile.hbox(pos, size);
                 assets.pixel.draw(
                     ctx,
                     DrawParams::new()
-                        .position(Vec2::from((real_x, real_y)))
-                        .scale(self.dark_tilemap.tile_size())
+                        .position(Vec2::new(hb.x, hb.y))
+                        .scale(Vec2::new(hb.w, hb.h))
                         .color(Color::RED),
                 );
             }
         });
         self.light_tilemap.run_for_each_tile(|(x, y), tile| {
-            if matches!(tile, Tile::Solid) {
-                let real_x = x as f32 * self.light_tilemap.tile_width();
-                let real_y = y as f32 * self.light_tilemap.tile_height();
+            if !matches!(tile, Tile::None) {
+                let size = self.light_tilemap.tile_size();
+                let pos = Vec2::new(x as f32, y as f32) * size;
+                let hb = tile.hbox(pos, size);
                 assets.pixel.draw(
                     ctx,
                     DrawParams::new()
-                        .position(Vec2::from((real_x, real_y)))
-                        .scale(self.light_tilemap.tile_size())
+                        .position(Vec2::new(hb.x, hb.y))
+                        .scale(Vec2::new(hb.w, hb.h))
                         .color(Color::BLUE),
                 );
             }

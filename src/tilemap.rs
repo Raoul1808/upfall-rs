@@ -66,11 +66,8 @@ impl Tile {
     }
 
     pub fn set_facing(&mut self, facing: Facing) {
-        match *self {
-            Tile::Spike(ref mut f) => {
-                *f = facing;
-            }
-            _ => {}
+        if let Tile::Spike(ref mut f) = *self {
+            *f = facing;
         }
     }
 }

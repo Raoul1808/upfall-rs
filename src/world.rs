@@ -1,7 +1,7 @@
 use tetra::{
     graphics::{self, BlendState, Color, DrawParams},
     input::{self, Key},
-    math::{Rect, Vec2},
+    math::Vec2,
 };
 
 use crate::{
@@ -93,18 +93,14 @@ impl World {
 
         self.player.post_update();
 
-        let plr_rect = self.player.get_hbox();
-        if spikes.into_iter().any(|s| s.collides_with_rect(plr_rect)) {
+        let player_rect = self.player.get_hbox();
+        if spikes
+            .into_iter()
+            .any(|s| s.collides_with_rect(player_rect))
+        {
             self.reset();
             return;
         }
-
-        let player_rect = Rect::new(
-            self.player.position.x,
-            self.player.position.y,
-            Player::PLAYER_SQUARE,
-            Player::PLAYER_SQUARE,
-        );
         let tilemap_rect = tilemap.rect();
 
         if input::is_key_pressed(ctx, Key::R) || !tilemap_rect.collides_with_rect(player_rect) {

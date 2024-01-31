@@ -21,13 +21,13 @@ pub enum LevelError {
 }
 
 impl Level {
-    pub fn load<P: AsRef<Path>>(path: P) -> Result<Level, LevelError>  {
-        let bytes = fs::read(path).map_err(|e| LevelError::Io(e))?;
+    pub fn load<P: AsRef<Path>>(path: P) -> Result<Level, LevelError> {
+        let bytes = fs::read(path).map_err(LevelError::Io)?;
         bincode::options()
             .with_varint_encoding()
             .with_big_endian()
             .deserialize(&bytes)
-            .map_err(|e| LevelError::Deserialization(e))
+            .map_err(LevelError::Deserialization)
     }
 
     pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), LevelError> {
@@ -35,7 +35,7 @@ impl Level {
             .with_varint_encoding()
             .with_big_endian()
             .serialize(self)
-            .map_err(|e| LevelError::Serialization(e))?;
-        fs::write(path, bytes).map_err(|e| LevelError::Io(e))
+            .map_err(LevelError::Serialization)?;
+        fs::write(path, bytes).map_err(LevelError::Io)
     }
 }

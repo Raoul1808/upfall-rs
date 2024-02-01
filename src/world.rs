@@ -88,6 +88,11 @@ impl World {
                 Tile::Spike(_) => {
                     spikes.push(rect);
                 }
+                Tile::Portal(axis) => {
+                    if self.player.can_traverse_portal(rect, *axis) {
+                        self.mode.switch();
+                    }
+                }
             }
         }
 

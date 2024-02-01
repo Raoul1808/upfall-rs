@@ -16,6 +16,7 @@ pub enum Tile {
     None,
     Solid,
     Spike(Facing),
+    Portal(Axis),
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
@@ -27,6 +28,13 @@ pub enum Facing {
     Right,
 }
 
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+pub enum Axis {
+    #[default]
+    Vertical,
+    Horizontal,
+}
+
 impl Tile {
     pub fn hbox(&self, pos: Vec2<f32>, size: Vec2<f32>) -> Rect<f32, f32> {
         const SPIKE_FRONT_GAP: f32 = 9. / 16.;
@@ -35,7 +43,7 @@ impl Tile {
         const SPIKE_LENGTH: f32 = 14. / 16.;
         match *self {
             Tile::None => Rect::default(),
-            Tile::Solid => Rect::new(pos.x, pos.y, size.x, size.y),
+            Tile::Solid | Tile::Portal(_) => Rect::new(pos.x, pos.y, size.x, size.y),
             Tile::Spike(dir) => match dir {
                 Facing::Up => Rect::new(
                     pos.x + size.x * SPIKE_SIDE_GAP,
@@ -68,6 +76,12 @@ impl Tile {
     pub fn set_facing(&mut self, facing: Facing) {
         if let Tile::Spike(ref mut f) = *self {
             *f = facing;
+        }
+    }
+
+    pub fn set_axis(&mut self, axis: Axis) {
+        if let Tile::Portal(ref mut a) = *self {
+            *a = axis;
         }
     }
 }

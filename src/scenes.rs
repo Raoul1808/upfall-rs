@@ -7,7 +7,7 @@ use tetra::{
 use crate::{
     level::Level,
     player::Player,
-    tilemap::{Facing, Tile, Tilemap},
+    tilemap::{Axis, Facing, Tile, Tilemap},
     world::{World, WorldMode},
     Assets, Transition,
 };
@@ -81,6 +81,7 @@ pub struct EditorScene {
     spawn_pos: Vec2<f32>,
     mouse_pos: Vec2<f32>,
     facing: Facing,
+    axis: Axis,
     tile: Tile,
 }
 
@@ -93,6 +94,7 @@ impl EditorScene {
             spawn_pos: Vec2::default(),
             mouse_pos: Vec2::default(),
             facing: Facing::Up,
+            axis: Axis::Horizontal,
             tile: Tile::Solid,
         }
     }
@@ -116,22 +118,34 @@ impl Scene for EditorScene {
             println!("spike!");
             self.tile = Tile::Spike(self.facing);
         }
+        if input::is_key_pressed(ctx, Key::Num3) {
+            println!("portal!");
+            self.tile = Tile::Portal(self.axis);
+        }
 
         if input::is_key_pressed(ctx, Key::Up) {
             self.facing = Facing::Up;
+            self.axis = Axis::Vertical;
             self.tile.set_facing(self.facing);
+            self.tile.set_axis(self.axis);
         }
         if input::is_key_pressed(ctx, Key::Down) {
             self.facing = Facing::Down;
+            self.axis = Axis::Vertical;
             self.tile.set_facing(self.facing);
+            self.tile.set_axis(self.axis);
         }
         if input::is_key_pressed(ctx, Key::Left) {
             self.facing = Facing::Left;
+            self.axis = Axis::Horizontal;
             self.tile.set_facing(self.facing);
+            self.tile.set_axis(self.axis);
         }
         if input::is_key_pressed(ctx, Key::Right) {
             self.facing = Facing::Right;
+            self.axis = Axis::Horizontal;
             self.tile.set_facing(self.facing);
+            self.tile.set_axis(self.axis);
         }
 
         let tilemap = match self.mode {

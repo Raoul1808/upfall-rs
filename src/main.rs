@@ -1,7 +1,6 @@
 use scenes::{EditorScene, Scene};
 use tetra::{
-    graphics::{self, Canvas, Color, Shader, Texture},
-    math::Vec2,
+    graphics::{self, Color, Shader, Texture},
     window, ContextBuilder, State,
 };
 
@@ -46,18 +45,13 @@ pub enum Transition {
 struct GameState {
     assets: Assets,
     scenes: Vec<Box<dyn Scene>>,
-    resolution: Vec2<i32>,
-    canvas: Canvas,
 }
 
 impl GameState {
     fn new(ctx: &mut tetra::Context) -> tetra::Result<GameState> {
-        let resolution = Vec2::new(1280, 720);
         Ok(GameState {
             assets: Assets::load(ctx)?,
             scenes: vec![Box::new(EditorScene::new())],
-            resolution,
-            canvas: Canvas::new(ctx, resolution.x, resolution.y)?,
         })
     }
 }
@@ -67,7 +61,8 @@ impl State for GameState {
         match self.scenes.last_mut() {
             Some(active_scene) => match active_scene.update(ctx)? {
                 Transition::None => {}
-                Transition::Push(scene) => {
+                Transition::Push(mut scene) => {
+                    scene.update(ctx)?;
                     self.scenes.push(scene);
                 }
                 Transition::Pop => {
@@ -82,20 +77,7 @@ impl State for GameState {
     fn draw(&mut self, ctx: &mut tetra::Context) -> tetra::Result {
         match self.scenes.last_mut() {
             Some(active_scene) => {
-                graphics::set_canvas(ctx, &self.canvas);
-                graphics::clear(ctx, active_scene.clear_color());
-                active_scene.canvas_draw(ctx, &self.assets)?;
-                graphics::reset_canvas(ctx);
-                if active_scene.use_shader() {
-                    graphics::set_shader(ctx, &self.assets.shader);
-                    self.assets
-                        .shader
-                        .set_uniform(ctx, "u_resolution", self.resolution.as_());
-                }
-                graphics::clear(ctx, Color::BLACK);
-                self.canvas.draw(ctx, Vec2::zero());
-                graphics::reset_shader(ctx);
-                active_scene.screen_draw(ctx, &self.assets)?;
+                active_scene.draw(ctx, &self.assets)?;
             }
             None => {
                 graphics::clear(ctx, Color::BLACK);

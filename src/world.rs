@@ -98,16 +98,13 @@ impl World {
         self.player.post_update();
 
         let player_rect = self.player.get_hbox();
-        if spikes
-            .into_iter()
-            .any(|s| s.collides_with_rect(player_rect))
-        {
+        if spikes.into_iter().any(|s| s.intersects(&player_rect)) {
             self.reset();
             return;
         }
         let tilemap_rect = tilemap.rect();
 
-        if input::is_key_pressed(ctx, Key::R) || !tilemap_rect.collides_with_rect(player_rect) {
+        if input::is_key_pressed(ctx, Key::R) || !tilemap_rect.intersects(&player_rect) {
             self.reset();
         }
     }
@@ -130,7 +127,7 @@ impl World {
         assets.player.draw(
             ctx,
             DrawParams::new()
-                .position(player_hbox.position())
+                .position(player_hbox.top_left())
                 .color(Color::WHITE),
         );
         self.dark_tilemap.render_tilemap(ctx, assets, Color::RED);

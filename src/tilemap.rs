@@ -2,8 +2,8 @@ use std::cmp::max;
 
 use serde::{Deserialize, Serialize};
 use tetra::{
-    graphics::{Color, DrawParams},
-    math::{Rect, Vec2},
+    graphics::{Color, DrawParams, Rectangle},
+    math::Vec2,
 };
 
 use crate::Assets;
@@ -41,34 +41,34 @@ pub enum Axis {
 }
 
 impl Tile {
-    pub fn hbox(&self, pos: Vec2<f32>, size: Vec2<f32>) -> Rect<f32, f32> {
+    pub fn hbox(&self, pos: Vec2<f32>, size: Vec2<f32>) -> Rectangle {
         const SPIKE_FRONT_GAP: f32 = 9. / 16.;
         const SPIKE_THICKNESS: f32 = 1. - SPIKE_FRONT_GAP;
         const SPIKE_SIDE_GAP: f32 = 1. / 16.;
         const SPIKE_LENGTH: f32 = 14. / 16.;
         match *self {
-            Tile::None => Rect::default(),
-            Tile::Solid | Tile::Portal(_) => Rect::new(pos.x, pos.y, size.x, size.y),
+            Tile::None => Rectangle::default(),
+            Tile::Solid | Tile::Portal(_) => Rectangle::new(pos.x, pos.y, size.x, size.y),
             Tile::Spike(dir) => match dir {
-                Facing::Up => Rect::new(
+                Facing::Up => Rectangle::new(
                     pos.x + size.x * SPIKE_SIDE_GAP,
                     pos.y + size.y * SPIKE_FRONT_GAP,
                     size.x * SPIKE_LENGTH,
                     size.y * SPIKE_THICKNESS,
                 ),
-                Facing::Down => Rect::new(
+                Facing::Down => Rectangle::new(
                     pos.x + size.x * SPIKE_SIDE_GAP,
                     pos.y,
                     size.x * SPIKE_LENGTH,
                     size.y * SPIKE_THICKNESS,
                 ),
-                Facing::Left => Rect::new(
+                Facing::Left => Rectangle::new(
                     pos.x + size.x * SPIKE_FRONT_GAP,
                     pos.y + size.y * SPIKE_SIDE_GAP,
                     size.x * SPIKE_THICKNESS,
                     size.y * SPIKE_LENGTH,
                 ),
-                Facing::Right => Rect::new(
+                Facing::Right => Rectangle::new(
                     pos.x,
                     pos.y + size.y * SPIKE_SIDE_GAP,
                     size.x * SPIKE_THICKNESS,
@@ -112,8 +112,8 @@ impl Tilemap {
         self.tile_size
     }
 
-    pub fn rect(&self) -> Rect<f32, f32> {
-        Rect::new(
+    pub fn rect(&self) -> Rectangle {
+        Rectangle::new(
             0.,
             0.,
             self.tilemap_size.x as f32 * self.tile_width(),
@@ -152,7 +152,7 @@ impl Tilemap {
         }
     }
 
-    pub fn get_neigbor_tile_hboxes(&self, pos: Vec2<f32>) -> Vec<(Tile, Rect<f32, f32>)> {
+    pub fn get_neigbor_tile_hboxes(&self, pos: Vec2<f32>) -> Vec<(Tile, Rectangle)> {
         let x = (pos.x / self.tile_width()).trunc() as usize;
         let y = (pos.y / self.tile_height()).trunc() as usize;
         let mut vec = vec![];

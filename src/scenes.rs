@@ -1,5 +1,5 @@
 use tetra::{
-    graphics::{Color, DrawParams},
+    graphics::{self, Canvas, Color, DrawParams},
     input::{self, Key},
     math::Vec2,
 };
@@ -13,44 +13,29 @@ use crate::{
 
 #[allow(unused_variables)]
 pub trait Scene {
-    fn use_shader(&self) -> bool {
-        false
-    }
-    fn clear_color(&self) -> Color;
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition>;
-    fn canvas_draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
-        Ok(())
-    }
-    fn screen_draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
-        Ok(())
-    }
+    fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result;
 }
 
 pub struct GameScene {
     world: World,
     color_a: Color,
     color_b: Color,
+    canvas: Canvas,
 }
 
 impl GameScene {
-    pub fn new(level: Level) -> GameScene {
-        GameScene {
+    pub fn new(ctx: &mut tetra::Context, level: Level) -> tetra::Result<GameScene> {
+        Ok(GameScene {
             world: World::new(level),
             color_a: Color::BLUE,
             color_b: Color::rgb8(100, 149, 237),
-        }
+            canvas: Canvas::new(ctx, 640, 360)?,
+        })
     }
 }
 
 impl Scene for GameScene {
-    fn use_shader(&self) -> bool {
-        true
-    }
-
-    fn clear_color(&self) -> Color {
-        Color::BLACK
-    }
-
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition> {
         if input::is_key_pressed(ctx, Key::Escape) {
             return Ok(Transition::Pop);
@@ -61,14 +46,21 @@ impl Scene for GameScene {
         Ok(Transition::None)
     }
 
-    fn canvas_draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
+    fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
         assets
             .shader
             .set_uniform(ctx, "u_color_a", self.color_a.with_alpha(1.));
         assets
             .shader
             .set_uniform(ctx, "u_color_b", self.color_b.with_alpha(1.));
+        graphics::clear(ctx, Color::BLACK);
+        graphics::set_canvas(ctx, &self.canvas);
         self.world.draw(ctx, assets);
+        graphics::reset_canvas(ctx);
+        graphics::clear(ctx, Color::BLACK);
+        graphics::set_shader(ctx, &assets.shader);
+        self.canvas.draw(ctx, Vec2::zero());
+        graphics::reset_shader(ctx);
         Ok(())
     }
 }
@@ -100,10 +92,6 @@ impl EditorScene {
 }
 
 impl Scene for EditorScene {
-    fn clear_color(&self) -> Color {
-        Color::rgb8(100, 149, 237)
-    }
-
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition> {
         self.mouse_pos = input::get_mouse_position(ctx);
         if input::is_key_pressed(ctx, Key::Tab) {
@@ -170,7 +158,7 @@ impl Scene for EditorScene {
                 light_tilemap: self.light_tilemap.clone(),
                 spawn_pos: self.spawn_pos,
             };
-            return Ok(Transition::Push(Box::new(GameScene::new(level))));
+            return Ok(Transition::Push(Box::new(GameScene::new(ctx, level)?)));
         }
 
         if input::is_key_down(ctx, Key::LeftCtrl) {
@@ -199,7 +187,8 @@ impl Scene for EditorScene {
         Ok(Transition::None)
     }
 
-    fn screen_draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
+    fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
+        graphics::clear(ctx, Color::rgb8(100, 149, 237));
         let (dark_alpha, light_alpha) = match self.mode {
             WorldMode::Dark => (1., 0.33),
             WorldMode::Light => (0.33, 1.),

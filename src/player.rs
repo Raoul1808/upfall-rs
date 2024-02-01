@@ -1,6 +1,7 @@
 use tetra::{
+    graphics::Rectangle,
     input::{self, Key},
-    math::{Rect, Vec2},
+    math::Vec2,
 };
 
 use crate::tilemap::Axis;
@@ -52,16 +53,16 @@ impl Player {
         }
     }
 
-    pub fn solve_collision_y(&mut self, rect: &Rect<f32, f32>) {
-        let next_hbox = Rect::new(
+    pub fn solve_collision_y(&mut self, rect: &Rectangle) {
+        let next_hbox = Rectangle::new(
             self.position.x,
             self.position.y + self.velocity.y,
             Self::PLAYER_SQUARE,
             Self::PLAYER_SQUARE,
         );
-        if rect.collides_with_rect(next_hbox) {
+        if rect.intersects(&next_hbox) {
             if self.velocity.y < 0. {
-                self.position.y = rect.y + rect.h;
+                self.position.y = rect.y + rect.height;
             }
             if self.velocity.y > 0. {
                 self.position.y = rect.y - Self::PLAYER_SQUARE;
@@ -70,26 +71,26 @@ impl Player {
         }
     }
 
-    pub fn solve_collision_x(&mut self, rect: &Rect<f32, f32>) {
-        let next_hbox = Rect::new(
+    pub fn solve_collision_x(&mut self, rect: &Rectangle) {
+        let next_hbox = Rectangle::new(
             self.position.x + self.velocity.x,
             self.position.y,
             Self::PLAYER_SQUARE,
             Self::PLAYER_SQUARE,
         );
-        if rect.collides_with_rect(next_hbox) {
+        if rect.intersects(&next_hbox) {
             if self.velocity.x > 0. {
                 self.position.x = rect.x - Self::PLAYER_SQUARE;
             }
             if self.velocity.x < 0. {
-                self.position.x = rect.x + rect.w;
+                self.position.x = rect.x + rect.width;
             }
             self.velocity.x = 0.;
         }
     }
 
-    pub fn can_traverse_portal(&mut self, rect: &Rect<f32, f32>, axis: Axis) -> bool {
-        if self.portal_traversed || !rect.collides_with_rect(self.get_hbox()) {
+    pub fn can_traverse_portal(&mut self, rect: &Rectangle, axis: Axis) -> bool {
+        if self.portal_traversed || !rect.intersects(&self.get_hbox()) {
             return false;
         }
         let portal_center = rect.center();
@@ -112,8 +113,8 @@ impl Player {
         false
     }
 
-    pub fn get_hbox(&self) -> Rect<f32, f32> {
-        Rect::new(
+    pub fn get_hbox(&self) -> Rectangle {
+        Rectangle::new(
             self.position.x,
             self.position.y,
             Self::PLAYER_SQUARE,

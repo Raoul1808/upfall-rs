@@ -7,8 +7,8 @@ use crate::tilemap::Axis;
 
 #[derive(Debug)]
 pub struct Player {
-    pub position: Vec2<f32>,
-    pub velocity: Vec2<f32>,
+    position: Vec2<f32>,
+    velocity: Vec2<f32>,
     portal_traversed: bool,
 }
 

@@ -75,8 +75,7 @@ impl World {
             WorldMode::Light => &self.light_tilemap,
         };
 
-        let neighbors =
-            tilemap.get_neigbor_tile_hboxes(self.player.position + Player::PLAYER_SQUARE / 2.);
+        let neighbors = tilemap.get_neigbor_tile_hboxes(self.player.get_hbox().center());
         let mut spikes = vec![];
         for (tile, rect) in &neighbors {
             match tile {
@@ -124,15 +123,14 @@ impl World {
                 0.0
             },
         );
-        assets.shader.set_uniform(
-            ctx,
-            "u_circle_pos",
-            self.player.position + Player::PLAYER_SQUARE / 2.,
-        );
+        let player_hbox = self.player.get_hbox();
+        assets
+            .shader
+            .set_uniform(ctx, "u_circle_pos", player_hbox.center());
         assets.pixel.draw(
             ctx,
             DrawParams::new()
-                .position(self.player.position)
+                .position(player_hbox.position())
                 .scale(Vec2::new(32., 32.))
                 .color(Color::WHITE),
         );

@@ -1,7 +1,12 @@
 use std::cmp::max;
 
 use serde::{Deserialize, Serialize};
-use tetra::math::{Rect, Vec2};
+use tetra::{
+    graphics::{Color, DrawParams},
+    math::{Rect, Vec2},
+};
+
+use crate::Assets;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Tilemap {
@@ -177,5 +182,36 @@ impl Tilemap {
             .iter()
             .enumerate()
             .for_each(|(index, tile)| f(self.index_to_pos(index), tile));
+    }
+
+    pub fn render_tilemap(&self, ctx: &mut tetra::Context, assets: &Assets, color: Color) {
+        self.run_for_each_tile(|(x, y), tile| match tile {
+            Tile::None => {}
+            Tile::Solid | Tile::Portal(_) => {
+                let pos = Vec2::new(x as f32, y as f32) * self.tile_size;
+                assets
+                    .tile
+                    .draw(ctx, DrawParams::new().position(pos).color(color));
+            }
+            Tile::Spike(dir) => {
+                use std::f32::consts::PI;
+                let offset = self.tile_size() / 2.;
+                let pos = Vec2::new(x as f32, y as f32) * self.tile_size + offset;
+                let rot = match dir {
+                    Facing::Right => 0.,
+                    Facing::Left => PI,
+                    Facing::Up => -PI / 2.,
+                    Facing::Down => PI / 2.,
+                };
+                assets.spike.draw(
+                    ctx,
+                    DrawParams::new()
+                        .position(pos)
+                        .rotation(rot)
+                        .origin(offset)
+                        .color(color),
+                );
+            }
+        });
     }
 }

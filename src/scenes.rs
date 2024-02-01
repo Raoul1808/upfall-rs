@@ -6,7 +6,6 @@ use tetra::{
 
 use crate::{
     level::Level,
-    player::Player,
     tilemap::{Axis, Facing, Tile, Tilemap},
     world::{World, WorldMode},
     Assets, Transition,
@@ -88,8 +87,8 @@ pub struct EditorScene {
 impl EditorScene {
     pub fn new() -> EditorScene {
         EditorScene {
-            dark_tilemap: Tilemap::new((40, 23), (32., 32.)),
-            light_tilemap: Tilemap::new((40, 23), (32., 32.)),
+            dark_tilemap: Tilemap::new((80, 45), (16., 16.)),
+            light_tilemap: Tilemap::new((80, 45), (16., 16.)),
             mode: WorldMode::Dark,
             spawn_pos: Vec2::default(),
             mouse_pos: Vec2::default(),
@@ -205,41 +204,13 @@ impl Scene for EditorScene {
             WorldMode::Dark => (1., 0.33),
             WorldMode::Light => (0.33, 1.),
         };
-        self.dark_tilemap.run_for_each_tile(|(x, y), tile| {
-            if !matches!(tile, Tile::None) {
-                let size = self.dark_tilemap.tile_size();
-                let pos = Vec2::new(x as f32, y as f32) * size;
-                let hb = tile.hbox(pos, size);
-                assets.pixel.draw(
-                    ctx,
-                    DrawParams::new()
-                        .position(Vec2::new(hb.x, hb.y))
-                        .scale(Vec2::new(hb.w, hb.h))
-                        .color(Color::BLACK.with_alpha(dark_alpha)),
-                );
-            }
-        });
-        self.light_tilemap.run_for_each_tile(|(x, y), tile| {
-            if !matches!(tile, Tile::None) {
-                let size = self.light_tilemap.tile_size();
-                let pos = Vec2::new(x as f32, y as f32) * size;
-                let hb = tile.hbox(pos, size);
-                assets.pixel.draw(
-                    ctx,
-                    DrawParams::new()
-                        .position(Vec2::new(hb.x, hb.y))
-                        .scale(Vec2::new(hb.w, hb.h))
-                        .color(Color::BLACK.with_alpha(light_alpha)),
-                );
-            }
-        });
-        assets.pixel.draw(
-            ctx,
-            DrawParams::new()
-                .position(self.spawn_pos)
-                .scale(Vec2::new(Player::PLAYER_SQUARE, Player::PLAYER_SQUARE))
-                .color(Color::RED),
-        );
+        self.dark_tilemap
+            .render_tilemap(ctx, assets, Color::WHITE.with_alpha(dark_alpha));
+        self.light_tilemap
+            .render_tilemap(ctx, assets, Color::BLACK.with_alpha(light_alpha));
+        assets
+            .player
+            .draw(ctx, DrawParams::new().position(self.spawn_pos));
         assets.pixel.draw(
             ctx,
             DrawParams::new()

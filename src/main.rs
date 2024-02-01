@@ -14,6 +14,9 @@ mod world;
 pub struct Assets {
     pixel: Texture,
     shader: Shader,
+    player: Texture,
+    spike: Texture,
+    tile: Texture,
 }
 
 impl Assets {
@@ -27,6 +30,9 @@ impl Assets {
                 &[255, 255, 255, 255],
             )?,
             shader: Shader::from_fragment_file(ctx, "res/shader.frag")?,
+            player: Texture::new(ctx, "res/sprites/player.png")?,
+            spike: Texture::new(ctx, "res/sprites/spike.png")?,
+            tile: Texture::new(ctx, "res/sprites/tile.png")?,
         })
     }
 }

@@ -127,41 +127,14 @@ impl World {
         assets
             .shader
             .set_uniform(ctx, "u_circle_pos", player_hbox.center());
-        assets.pixel.draw(
+        assets.player.draw(
             ctx,
             DrawParams::new()
                 .position(player_hbox.position())
-                .scale(Vec2::new(32., 32.))
                 .color(Color::WHITE),
         );
-        self.dark_tilemap.run_for_each_tile(|(x, y), tile| {
-            if !matches!(tile, Tile::None) {
-                let size = self.dark_tilemap.tile_size();
-                let pos = Vec2::new(x as f32, y as f32) * size;
-                let hb = tile.hbox(pos, size);
-                assets.pixel.draw(
-                    ctx,
-                    DrawParams::new()
-                        .position(Vec2::new(hb.x, hb.y))
-                        .scale(Vec2::new(hb.w, hb.h))
-                        .color(Color::RED),
-                );
-            }
-        });
-        self.light_tilemap.run_for_each_tile(|(x, y), tile| {
-            if !matches!(tile, Tile::None) {
-                let size = self.light_tilemap.tile_size();
-                let pos = Vec2::new(x as f32, y as f32) * size;
-                let hb = tile.hbox(pos, size);
-                assets.pixel.draw(
-                    ctx,
-                    DrawParams::new()
-                        .position(Vec2::new(hb.x, hb.y))
-                        .scale(Vec2::new(hb.w, hb.h))
-                        .color(Color::BLUE),
-                );
-            }
-        });
+        self.dark_tilemap.render_tilemap(ctx, assets, Color::RED);
+        self.light_tilemap.render_tilemap(ctx, assets, Color::BLUE);
         graphics::reset_blend_state(ctx);
     }
 }

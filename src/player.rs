@@ -13,7 +13,7 @@ pub struct Player {
 }
 
 impl Player {
-    pub const PLAYER_SQUARE: f32 = 32.;
+    pub const PLAYER_SQUARE: f32 = 16.;
     pub const HALF_SIZE: Vec2<f32> = Vec2::new(Self::PLAYER_SQUARE / 2., Self::PLAYER_SQUARE / 2.);
 
     pub fn new(spawn_pos: Vec2<f32>) -> Player {

@@ -57,6 +57,17 @@ impl GameState {
 }
 
 impl State for GameState {
+    fn event(
+        &mut self,
+        ctx: &mut tetra::Context,
+        event: tetra::Event,
+    ) -> Result<(), tetra::TetraError> {
+        if let Some(active_scene) = self.scenes.last_mut() {
+            active_scene.event(ctx, event)?;
+        }
+        Ok(())
+    }
+
     fn update(&mut self, ctx: &mut tetra::Context) -> Result<(), tetra::TetraError> {
         match self.scenes.last_mut() {
             Some(active_scene) => match active_scene.update(ctx)? {
@@ -89,6 +100,7 @@ impl State for GameState {
 
 fn main() -> tetra::Result {
     ContextBuilder::new("Upfall", 1280, 720)
+        .resizable(true)
         .show_mouse(true)
         .build()?
         .run(GameState::new)

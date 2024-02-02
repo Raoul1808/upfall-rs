@@ -62,13 +62,10 @@ impl World {
     pub fn update(&mut self, ctx: &mut tetra::Context) {
         if input::is_key_pressed(ctx, Key::X) {
             self.mode.switch();
+            self.player.on_world_change(self.mode);
         }
 
-        let flip_gravity = match self.mode {
-            WorldMode::Dark => false,
-            WorldMode::Light => true,
-        };
-        self.player.update(ctx, flip_gravity);
+        self.player.update(ctx);
 
         let tilemap = match self.mode {
             WorldMode::Dark => &self.dark_tilemap,
@@ -127,8 +124,21 @@ impl World {
         assets.player.draw(
             ctx,
             DrawParams::new()
-                .position(player_hbox.top_left())
-                .color(Color::WHITE),
+                .position(player_hbox.center())
+                .origin(Vec2::one() * 8.)
+                .color(Color::WHITE)
+                .scale(Vec2::new(
+                    if self.player.flip_horizontal() {
+                        -1.0
+                    } else {
+                        1.0
+                    },
+                    if self.player.flip_vertical() {
+                        -1.0
+                    } else {
+                        1.0
+                    },
+                )),
         );
         self.dark_tilemap.render_tilemap(ctx, assets, Color::RED);
         self.light_tilemap.render_tilemap(ctx, assets, Color::BLUE);

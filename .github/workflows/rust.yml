@@ -1,0 +1,31 @@
+name: Rust
+
+on: workflow_dispatch
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download SDL2
+      run: |
+        curl --output sdl.zip https://github.com/libsdl-org/SDL/releases/download/release-2.30.0/SDL2-devel-2.30.0-VC.zip
+        Expand-Archive -Path sdl.zip -DestinationPath .
+        copy SDL2-2.30.0/lib/x64/* .
+    - name: Build
+      run: cargo build --verbose --release
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Package
+      run: |
+        copy target/release/upfall-rs .
+        Compress-Archive -Path upfall-rs SDL2.dll res -DestinationPath win-x64.zip
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: win-x64.zip
+        path: ${{ github.workspace }}/win-x64.zip

@@ -119,14 +119,18 @@ pub struct EditorScene {
     axis: Axis,
     tile: Tile,
     tilemap_size: Vec2<usize>,
+    camera: Camera,
 }
 
 impl EditorScene {
     pub const TILEMAP_MIN_X: usize = 40;
     pub const TILEMAP_MIN_Y: usize = 23;
 
-    pub fn new() -> EditorScene {
+    pub fn new(ctx: &mut tetra::Context) -> EditorScene {
         let tilemap_size = (80, 45);
+        let mut camera = Camera::with_window_size(ctx);
+        camera.position = camera.visible_rect().bottom_right();
+        camera.update();
         EditorScene {
             dark_tilemap: Tilemap::new(tilemap_size, (16., 16.)),
             light_tilemap: Tilemap::new(tilemap_size, (16., 16.)),
@@ -137,13 +141,25 @@ impl EditorScene {
             axis: Axis::Horizontal,
             tile: Tile::Solid,
             tilemap_size: tilemap_size.into(),
+            camera,
         }
     }
 }
 
 impl Scene for EditorScene {
+    fn event(&mut self, _ctx: &mut tetra::Context, event: tetra::Event) -> tetra::Result {
+        if let Event::Resized { width, height } = event {
+            self.camera.set_viewport_size(width as f32, height as f32);
+        }
+        Ok(())
+    }
+
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition> {
-        self.mouse_pos = input::get_mouse_position(ctx);
+        self.mouse_pos = self.camera.mouse_position(ctx);
+        let shift =
+            input::is_key_down(ctx, Key::LeftShift) || input::is_key_down(ctx, Key::RightShift);
+        let ctrl =
+            input::is_key_down(ctx, Key::LeftCtrl) || input::is_key_down(ctx, Key::RightCtrl);
         if input::is_key_pressed(ctx, Key::Tab) {
             self.mode.switch();
         }
@@ -185,7 +201,7 @@ impl Scene for EditorScene {
             self.tile.set_axis(self.axis);
         }
 
-        if input::is_key_down(ctx, Key::LeftShift) {
+        if shift && !ctrl {
             if input::is_key_pressed(ctx, Key::A) && self.tilemap_size.x > Self::TILEMAP_MIN_X {
                 self.tilemap_size.x -= 1;
                 self.dark_tilemap.resize(self.tilemap_size);
@@ -210,6 +226,30 @@ impl Scene for EditorScene {
                 self.light_tilemap.resize(self.tilemap_size);
                 println!("Tilemap is now size {}", self.tilemap_size);
             }
+
+            const CAMERA_MOVE: f32 = 5.;
+            const SCALE_FACTOR: f32 = 1.5;
+            if input::is_key_down(ctx, Key::Left) {
+                self.camera.position.x -= CAMERA_MOVE;
+            }
+            if input::is_key_down(ctx, Key::Right) {
+                self.camera.position.x += CAMERA_MOVE;
+            }
+            if input::is_key_down(ctx, Key::Up) {
+                self.camera.position.y -= CAMERA_MOVE;
+            }
+            if input::is_key_down(ctx, Key::Down) {
+                self.camera.position.y += CAMERA_MOVE;
+            }
+            if input::is_key_pressed(ctx, Key::Equals) {
+                self.camera.scale *= SCALE_FACTOR;
+            }
+            if input::is_key_pressed(ctx, Key::Minus) {
+                self.camera.scale /= SCALE_FACTOR;
+                if self.camera.scale.x <= 1. {
+                    self.camera.scale = Vec2::one();
+                }
+            }
         }
 
         let tilemap = match self.mode {
@@ -217,15 +257,15 @@ impl Scene for EditorScene {
             WorldMode::Light => &mut self.light_tilemap,
         };
 
-        if input::is_mouse_button_down(ctx, input::MouseButton::Left) {
+        if !shift && !ctrl && input::is_mouse_button_down(ctx, input::MouseButton::Left) {
             tilemap.set_tile_f32(self.mouse_pos, self.tile);
         }
 
-        if input::is_mouse_button_down(ctx, input::MouseButton::Right) {
+        if !shift && !ctrl && input::is_mouse_button_down(ctx, input::MouseButton::Right) {
             tilemap.set_tile_f32(self.mouse_pos, Tile::None);
         }
 
-        if input::is_mouse_button_down(ctx, input::MouseButton::Middle) {
+        if !shift && !ctrl && input::is_mouse_button_down(ctx, input::MouseButton::Middle) {
             self.spawn_pos = tilemap.snap(self.mouse_pos);
         }
 
@@ -238,7 +278,7 @@ impl Scene for EditorScene {
             return Ok(Transition::Push(Box::new(GameScene::new(ctx, level)?)));
         }
 
-        if input::is_key_down(ctx, Key::LeftCtrl) {
+        if ctrl && !shift {
             if input::is_key_pressed(ctx, Key::S) {
                 let level = Level {
                     dark_tilemap: self.dark_tilemap.clone(),
@@ -261,11 +301,13 @@ impl Scene for EditorScene {
             }
         }
 
+        self.camera.update();
         Ok(Transition::None)
     }
 
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
         graphics::clear(ctx, Color::BLACK);
+        graphics::set_transform_matrix(ctx, self.camera.as_matrix());
         let tilemap_rect = self.dark_tilemap.rect();
         assets.pixel.draw(
             ctx,
@@ -285,13 +327,16 @@ impl Scene for EditorScene {
         assets
             .player
             .draw(ctx, DrawParams::new().position(self.spawn_pos));
-        assets.pixel.draw(
-            ctx,
-            DrawParams::new()
-                .position(self.dark_tilemap.snap(self.mouse_pos))
-                .scale(self.dark_tilemap.tile_size())
-                .color(Color::WHITE.with_alpha(1. / 3.)),
-        );
+        if self.dark_tilemap.rect().contains_point(self.mouse_pos) {
+            assets.pixel.draw(
+                ctx,
+                DrawParams::new()
+                    .position(self.dark_tilemap.snap(self.mouse_pos))
+                    .scale(self.dark_tilemap.tile_size())
+                    .color(Color::WHITE.with_alpha(1. / 3.)),
+            );
+        }
+        graphics::reset_transform_matrix(ctx);
         Ok(())
     }
 }

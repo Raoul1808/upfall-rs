@@ -51,7 +51,7 @@ impl GameState {
     fn new(ctx: &mut tetra::Context) -> tetra::Result<GameState> {
         Ok(GameState {
             assets: Assets::load(ctx)?,
-            scenes: vec![Box::new(EditorScene::new())],
+            scenes: vec![Box::new(EditorScene::new(ctx))],
         })
     }
 }

@@ -118,19 +118,25 @@ pub struct EditorScene {
     facing: Facing,
     axis: Axis,
     tile: Tile,
+    tilemap_size: Vec2<usize>,
 }
 
 impl EditorScene {
+    pub const TILEMAP_MIN_X: usize = 40;
+    pub const TILEMAP_MIN_Y: usize = 23;
+
     pub fn new() -> EditorScene {
+        let tilemap_size = (80, 45);
         EditorScene {
-            dark_tilemap: Tilemap::new((80, 45), (16., 16.)),
-            light_tilemap: Tilemap::new((80, 45), (16., 16.)),
+            dark_tilemap: Tilemap::new(tilemap_size, (16., 16.)),
+            light_tilemap: Tilemap::new(tilemap_size, (16., 16.)),
             mode: WorldMode::Dark,
             spawn_pos: Vec2::default(),
             mouse_pos: Vec2::default(),
             facing: Facing::Up,
             axis: Axis::Horizontal,
             tile: Tile::Solid,
+            tilemap_size: tilemap_size.into(),
         }
     }
 }
@@ -177,6 +183,33 @@ impl Scene for EditorScene {
             self.axis = Axis::Horizontal;
             self.tile.set_facing(self.facing);
             self.tile.set_axis(self.axis);
+        }
+
+        if input::is_key_down(ctx, Key::LeftShift) {
+            if input::is_key_pressed(ctx, Key::A) && self.tilemap_size.x > Self::TILEMAP_MIN_X {
+                self.tilemap_size.x -= 1;
+                self.dark_tilemap.resize(self.tilemap_size);
+                self.light_tilemap.resize(self.tilemap_size);
+                println!("Tilemap is now size {}", self.tilemap_size);
+            }
+            if input::is_key_pressed(ctx, Key::D) {
+                self.tilemap_size.x += 1;
+                self.dark_tilemap.resize(self.tilemap_size);
+                self.light_tilemap.resize(self.tilemap_size);
+                println!("Tilemap is now size {}", self.tilemap_size);
+            }
+            if input::is_key_pressed(ctx, Key::W) && self.tilemap_size.y > Self::TILEMAP_MIN_Y {
+                self.tilemap_size.y -= 1;
+                self.dark_tilemap.resize(self.tilemap_size);
+                self.light_tilemap.resize(self.tilemap_size);
+                println!("Tilemap is now size {}", self.tilemap_size);
+            }
+            if input::is_key_pressed(ctx, Key::S) {
+                self.tilemap_size.y += 1;
+                self.dark_tilemap.resize(self.tilemap_size);
+                self.light_tilemap.resize(self.tilemap_size);
+                println!("Tilemap is now size {}", self.tilemap_size);
+            }
         }
 
         let tilemap = match self.mode {
@@ -232,7 +265,15 @@ impl Scene for EditorScene {
     }
 
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
-        graphics::clear(ctx, Color::rgb8(100, 149, 237));
+        graphics::clear(ctx, Color::BLACK);
+        let tilemap_rect = self.dark_tilemap.rect();
+        assets.pixel.draw(
+            ctx,
+            DrawParams::new()
+                .position(tilemap_rect.top_left())
+                .scale(tilemap_rect.bottom_right())
+                .color(Color::rgb8(100, 149, 237)),
+        );
         let (dark_alpha, light_alpha) = match self.mode {
             WorldMode::Dark => (1., 0.33),
             WorldMode::Light => (0.33, 1.),

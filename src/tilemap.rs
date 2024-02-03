@@ -1,4 +1,4 @@
-use std::cmp::max;
+use std::cmp::{max, min};
 
 use serde::{Deserialize, Serialize};
 use tetra::{
@@ -15,7 +15,7 @@ pub struct Tilemap {
     tile_size: Vec2<f32>,
 }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Tile {
     #[default]
     None,
@@ -24,7 +24,7 @@ pub enum Tile {
     Portal(Axis),
 }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Facing {
     #[default]
     Up,
@@ -33,7 +33,7 @@ pub enum Facing {
     Right,
 }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Axis {
     #[default]
     Vertical,
@@ -213,5 +213,66 @@ impl Tilemap {
                 );
             }
         });
+    }
+
+    pub fn resize(&mut self, new_size: Vec2<usize>) {
+        let new_total_size = new_size.x * new_size.y;
+        let old_total_size = self.tilemap_size.x * self.tilemap_size.y;
+        let mut new_map = vec![Tile::None; new_size.x * new_size.y];
+        let mut index = 0;
+        let mut x = 0;
+        let mut y = 0;
+        while (x + 1) * (y + 1) < min(new_total_size, old_total_size) {
+            new_map[index] = self.tiles[y * self.tilemap_size.x + x];
+            index += 1;
+            x += 1;
+            if x >= min(self.tilemap_size.x, new_size.x) {
+                x = 0;
+                y += 1;
+                if self.tilemap_size.x < new_size.x {
+                    index = new_size.x * y;
+                }
+            }
+        }
+        self.tilemap_size = new_size;
+        self.tiles = new_map;
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{Tile, Tilemap};
+
+    fn make_vec_from_str(flat_tilemap: &str) -> Vec<Tile> {
+        let mut vec = Vec::with_capacity(flat_tilemap.len());
+        flat_tilemap.chars().for_each(|c| match c {
+            'O' => {
+                vec.push(Tile::None);
+            }
+            'X' => {
+                vec.push(Tile::Solid);
+            }
+            _ => {
+                panic!("Invalid character for test tilemap creation");
+            }
+        });
+        vec
+    }
+
+    #[test]
+    fn resize_tilemap() {
+        let mut tilemap = Tilemap::new((3, 3), (1., 1.));
+        tilemap.tiles[4] = Tile::Solid;
+        tilemap.tiles[8] = Tile::Solid;
+        let expected_tiles = make_vec_from_str("OOOOXOOOX");
+        assert_eq!(tilemap.tiles, expected_tiles);
+
+        tilemap.resize((2, 3).into());
+        let expected_tiles = make_vec_from_str("OOOXOO");
+        assert_eq!(tilemap.tiles, expected_tiles);
+
+        tilemap.resize((4, 4).into());
+        let expected_tiles = make_vec_from_str("OOOOOXOOOOOOOOOO");
+        assert_eq!(tilemap.tiles, expected_tiles);
     }
 }

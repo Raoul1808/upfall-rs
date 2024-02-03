@@ -22,8 +22,8 @@ jobs:
       run: cargo test --verbose
     - name: Package
       run: |
-        copy target/release/upfall-rs .
-        Compress-Archive -Path upfall-rs SDL2.dll res -DestinationPath win-x64.zip
+        copy target/release/upfall-rs.exe .
+        Compress-Archive -Path upfall-rs.exe SDL2.dll res -DestinationPath win-x64.zip
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:

@@ -1,5 +1,5 @@
 use tetra::{
-    graphics::{self, BlendState, Color, DrawParams},
+    graphics::{self, BlendState, Color, DrawParams, Rectangle},
     input::{self, Key},
     math::Vec2,
 };
@@ -57,6 +57,14 @@ impl World {
     pub fn reset(&mut self) {
         self.player = Player::new(self.spawn_pos);
         self.mode = WorldMode::Dark;
+    }
+
+    pub fn player_pos(&self) -> Vec2<f32> {
+        self.player.get_hbox().center()
+    }
+
+    pub fn get_world_rect(&self) -> Rectangle {
+        self.dark_tilemap.rect()
     }
 
     pub fn update(&mut self, ctx: &mut tetra::Context) {

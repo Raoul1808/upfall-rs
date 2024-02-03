@@ -68,7 +68,21 @@ impl Scene for GameScene {
 
         self.dt += tetra::time::get_delta_time(ctx).as_secs_f32();
         self.world.update(ctx);
-        self.camera.position = Self::INNER_SIZE.as_() / 2.;
+        self.camera.position = self.world.player_pos();
+        let world_rect = self.world.get_world_rect();
+        let cam_rect = self.camera.visible_rect();
+        if cam_rect.left() < world_rect.left() {
+            self.camera.position.x += world_rect.left() - cam_rect.left();
+        }
+        if cam_rect.right() > world_rect.right() {
+            self.camera.position.x += world_rect.right() - cam_rect.right();
+        }
+        if cam_rect.top() < world_rect.top() {
+            self.camera.position.y += world_rect.top() - cam_rect.top();
+        }
+        if cam_rect.bottom() > world_rect.bottom() {
+            self.camera.position.y += world_rect.bottom() - cam_rect.bottom();
+        }
         self.camera.update();
         Ok(Transition::None)
     }

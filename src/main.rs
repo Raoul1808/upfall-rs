@@ -1,4 +1,4 @@
-use scenes::{EditorScene, Scene};
+use scenes::{EditorScene, Scene, Transition};
 use tetra::{
     graphics::{self, Color, Shader, Texture},
     window, ContextBuilder, State,
@@ -34,12 +34,6 @@ impl Assets {
             tile: Texture::new(ctx, "res/sprites/tile.png")?,
         })
     }
-}
-
-pub enum Transition {
-    None,
-    Push(Box<dyn Scene>),
-    Pop,
 }
 
 struct GameState {

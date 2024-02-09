@@ -64,7 +64,11 @@ impl egui_tetra::State for GameState {
         Ok(())
     }
 
-    fn update(&mut self, ctx: &mut tetra::Context, _egui_ctx: &CtxRef) -> Result<(), egui_tetra::Error> {
+    fn update(
+        &mut self,
+        ctx: &mut tetra::Context,
+        _egui_ctx: &CtxRef,
+    ) -> Result<(), egui_tetra::Error> {
         match self.scenes.last_mut() {
             Some(active_scene) => match active_scene.update(ctx)? {
                 Transition::None => {}
@@ -81,10 +85,15 @@ impl egui_tetra::State for GameState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut tetra::Context, _egui_ctx: &CtxRef) -> Result<(), egui_tetra::Error> {
+    fn draw(
+        &mut self,
+        ctx: &mut tetra::Context,
+        egui_ctx: &CtxRef,
+    ) -> Result<(), egui_tetra::Error> {
         match self.scenes.last_mut() {
             Some(active_scene) => {
                 active_scene.draw(ctx, &self.assets)?;
+                active_scene.egui_layout(ctx, egui_ctx)?;
             }
             None => {
                 graphics::clear(ctx, Color::BLACK);

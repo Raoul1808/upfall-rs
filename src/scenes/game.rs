@@ -1,3 +1,4 @@
+use egui_tetra::egui;
 use tetra::{
     graphics::{
         self,
@@ -13,6 +14,15 @@ use crate::{level::Level, world::World, Assets, Scene};
 
 use super::Transition;
 
+fn buf_to_col(buf: [f32; 3]) -> Color {
+    Color {
+        r: buf[0],
+        g: buf[1],
+        b: buf[2],
+        a: 1.,
+    }
+}
+
 pub struct GameScene {
     world: World,
     color_a: Color,
@@ -20,6 +30,8 @@ pub struct GameScene {
     camera: Camera,
     scaler: ScreenScaler,
     dt: f32,
+    color_a_buf: [f32; 3],
+    color_b_buf: [f32; 3],
 }
 
 impl GameScene {
@@ -27,8 +39,8 @@ impl GameScene {
     pub fn new(ctx: &mut tetra::Context, level: Level) -> tetra::Result<GameScene> {
         Ok(GameScene {
             world: World::new(level),
-            color_a: Color::BLUE,
-            color_b: Color::rgb8(100, 149, 237),
+            color_a: Color::BLACK,
+            color_b: Color::WHITE,
             camera: Camera::new(Self::INNER_SIZE.x as f32, Self::INNER_SIZE.y as f32),
             scaler: ScreenScaler::with_window_size(
                 ctx,
@@ -37,6 +49,8 @@ impl GameScene {
                 ScalingMode::ShowAll,
             )?,
             dt: 0.,
+            color_a_buf: [0.; 3],
+            color_b_buf: [1.; 3],
         })
     }
 }
@@ -73,6 +87,28 @@ impl Scene for GameScene {
         }
         self.camera.update();
         Ok(Transition::None)
+    }
+
+    fn egui_layout(
+        &mut self,
+        _ctx: &mut tetra::Context,
+        egui_ctx: &egui_tetra::egui::CtxRef,
+    ) -> Result<(), egui_tetra::Error> {
+        egui::Window::new("Background Color").show(egui_ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Color A");
+                if ui.color_edit_button_rgb(&mut self.color_a_buf).changed() {
+                    self.color_a = buf_to_col(self.color_a_buf);
+                }
+            });
+            ui.horizontal(|ui| {
+                ui.label("Color B");
+                if ui.color_edit_button_rgb(&mut self.color_b_buf).changed() {
+                    self.color_b = buf_to_col(self.color_b_buf);
+                }
+            });
+        });
+        Ok(())
     }
 
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {

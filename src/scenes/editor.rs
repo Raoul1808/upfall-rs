@@ -46,6 +46,8 @@ impl EditorScene {
     pub const TILEMAP_MIN_Y: usize = 23;
     pub const TILEMAP_MAX_X: usize = 1000;
     pub const TILEMAP_MAX_Y: usize = 1000;
+    pub const ZOOM_MIN: f32 = 1.0;
+    pub const ZOOM_MAX: f32 = 8.0;
 
     pub fn new(ctx: &mut tetra::Context) -> EditorScene {
         let tilemap_size = (80, 45);
@@ -77,7 +79,6 @@ impl EditorScene {
             input::is_key_down(ctx, Key::LeftShift) || input::is_key_down(ctx, Key::RightShift);
 
         const CAMERA_MOVE: f32 = 5.;
-        const SCALE_FACTOR: f32 = 1.5;
         if input::is_key_down(ctx, Key::A) {
             self.camera.position.x -= CAMERA_MOVE;
         }
@@ -89,15 +90,6 @@ impl EditorScene {
         }
         if input::is_key_down(ctx, Key::S) {
             self.camera.position.y += CAMERA_MOVE;
-        }
-        if input::is_key_pressed(ctx, Key::Equals) {
-            self.camera.scale *= SCALE_FACTOR;
-        }
-        if input::is_key_pressed(ctx, Key::Minus) {
-            self.camera.scale /= SCALE_FACTOR;
-            if self.camera.scale.x <= 1. {
-                self.camera.scale = Vec2::one();
-            }
         }
 
         if ctrl && !shift {
@@ -228,6 +220,17 @@ impl Scene for EditorScene {
                 self.light_tilemap.resize(self.tilemap_size);
             });
             ui.separator();
+            ui.horizontal(|ui| {
+                ui.label("Zoom Level");
+                let mut zoom_scale = self.camera.scale.x;
+                ui.add(egui::Slider::new(
+                    &mut zoom_scale,
+                    Self::ZOOM_MIN..=Self::ZOOM_MAX,
+                ));
+                self.camera.scale.x = zoom_scale;
+                self.camera.scale.y = zoom_scale;
+                self.camera.update();
+            });
             ui.horizontal(|ui| {
                 ui.label(format!("Current tilemap mode: {}", self.mode));
                 if ui.button("Switch").clicked() {

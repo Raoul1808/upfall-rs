@@ -1,3 +1,4 @@
+use egui_tetra::egui;
 use tetra::{
     graphics::{self, Camera, Color, DrawParams},
     input::{self, Key},
@@ -7,12 +8,24 @@ use tetra::{
 
 use crate::{
     level::Level,
+    palette::Palette,
     tilemap::{Axis, Facing, Tile, Tilemap},
     world::WorldMode,
     Assets,
 };
 
 use super::{GameScene, Scene, Transition};
+
+fn color_egui(ui: &mut egui::Ui, label: &str, color: &mut Color) {
+    let mut col_bytes = [color.r, color.g, color.b];
+    ui.horizontal(|ui| {
+        ui.label(label);
+        ui.color_edit_button_rgb(&mut col_bytes);
+    });
+    color.r = col_bytes[0];
+    color.g = col_bytes[1];
+    color.b = col_bytes[2];
+}
 
 pub struct EditorScene {
     dark_tilemap: Tilemap,
@@ -25,6 +38,7 @@ pub struct EditorScene {
     tile: Tile,
     tilemap_size: Vec2<usize>,
     camera: Camera,
+    palette: Palette,
 }
 
 impl EditorScene {
@@ -47,6 +61,10 @@ impl EditorScene {
             tile: Tile::Solid,
             tilemap_size: tilemap_size.into(),
             camera,
+            palette: Palette::Simple {
+                dark: Color::BLACK,
+                light: Color::WHITE,
+            },
         }
     }
 }
@@ -179,6 +197,7 @@ impl Scene for EditorScene {
                 dark_tilemap: self.dark_tilemap.clone(),
                 light_tilemap: self.light_tilemap.clone(),
                 spawn_pos: self.spawn_pos,
+                palette: self.palette,
             };
             return Ok(Transition::Push(Box::new(GameScene::new(ctx, level)?)));
         }
@@ -189,6 +208,7 @@ impl Scene for EditorScene {
                     dark_tilemap: self.dark_tilemap.clone(),
                     light_tilemap: self.light_tilemap.clone(),
                     spawn_pos: self.spawn_pos,
+                    palette: self.palette,
                 };
                 let res = level.save("level.umdx");
                 println!("{:?}", res.err());
@@ -200,6 +220,7 @@ impl Scene for EditorScene {
                         self.dark_tilemap = l.dark_tilemap;
                         self.light_tilemap = l.light_tilemap;
                         self.spawn_pos = l.spawn_pos;
+                        self.palette = l.palette;
                     }
                     Err(e) => println!("{:?}", e),
                 }
@@ -208,6 +229,45 @@ impl Scene for EditorScene {
 
         self.camera.update();
         Ok(Transition::None)
+    }
+
+    fn egui_layout(
+        &mut self,
+        _ctx: &mut tetra::Context,
+        egui_ctx: &egui_tetra::egui::CtxRef,
+    ) -> Result<(), egui_tetra::Error> {
+        egui::Window::new("Palette").show(egui_ctx, |ui| {
+            egui::ComboBox::from_label("Palette Type")
+                .selected_text(self.palette.type_str())
+                .show_ui(ui, |ui| {
+                    for palette in Palette::default_all() {
+                        ui.selectable_value(&mut self.palette, palette, palette.type_str());
+                    }
+                });
+
+            match self.palette {
+                Palette::Simple {
+                    ref mut dark,
+                    ref mut light,
+                } => {
+                    color_egui(ui, "Dark Color", dark);
+                    color_egui(ui, "Light Color", light);
+                }
+                Palette::Lerp {
+                    ref mut dark1,
+                    ref mut dark2,
+                    ref mut light1,
+                    ref mut light2,
+                } => {
+                    color_egui(ui, "First Dark Color", dark1);
+                    color_egui(ui, "Second Dark Color", dark2);
+                    color_egui(ui, "First Light Color", light1);
+                    color_egui(ui, "Second Light Color", light2);
+                }
+                _ => {}
+            }
+        });
+        Ok(())
     }
 
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {

@@ -4,12 +4,13 @@ use bincode::Options;
 use serde::{Deserialize, Serialize};
 use tetra::math::Vec2;
 
-use crate::tilemap::Tilemap;
+use crate::{palette::Palette, tilemap::Tilemap};
 
 #[derive(Serialize, Deserialize)]
 pub struct Level {
     pub dark_tilemap: Tilemap,
     pub light_tilemap: Tilemap,
+    pub palette: Palette,
     pub spawn_pos: Vec2<f32>,
 }
 

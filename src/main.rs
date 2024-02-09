@@ -1,4 +1,4 @@
-use egui_tetra::egui::CtxRef;
+use egui_tetra::egui::{self, CtxRef};
 use scenes::{EditorScene, Scene, Transition};
 use tetra::{
     graphics::{self, Color, Shader, Texture},
@@ -6,6 +6,7 @@ use tetra::{
 };
 
 mod level;
+mod palette;
 mod player;
 mod scenes;
 mod tilemap;
@@ -85,15 +86,25 @@ impl egui_tetra::State for GameState {
         Ok(())
     }
 
+    fn ui(
+        &mut self,
+        ctx: &mut tetra::Context,
+        egui_ctx: &egui::CtxRef,
+    ) -> Result<(), egui_tetra::Error> {
+        if let Some(active_scene) = self.scenes.last_mut() {
+            active_scene.egui_layout(ctx, egui_ctx)?;
+        }
+        Ok(())
+    }
+
     fn draw(
         &mut self,
         ctx: &mut tetra::Context,
-        egui_ctx: &CtxRef,
+        _egui_ctx: &CtxRef,
     ) -> Result<(), egui_tetra::Error> {
         match self.scenes.last_mut() {
             Some(active_scene) => {
                 active_scene.draw(ctx, &self.assets)?;
-                active_scene.egui_layout(ctx, egui_ctx)?;
             }
             None => {
                 graphics::clear(ctx, Color::BLACK);

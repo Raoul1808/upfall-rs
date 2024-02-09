@@ -1,4 +1,3 @@
-use egui_tetra::egui;
 use tetra::{
     graphics::{
         self,
@@ -10,37 +9,23 @@ use tetra::{
     Event,
 };
 
-use crate::{level::Level, world::World, Assets, Scene};
+use crate::{level::Level, palette::PaletteSystem, world::World, Assets, Scene};
 
 use super::Transition;
 
-fn buf_to_col(buf: [f32; 3]) -> Color {
-    Color {
-        r: buf[0],
-        g: buf[1],
-        b: buf[2],
-        a: 1.,
-    }
-}
-
 pub struct GameScene {
     world: World,
-    color_a: Color,
-    color_b: Color,
     camera: Camera,
     scaler: ScreenScaler,
-    dt: f32,
-    color_a_buf: [f32; 3],
-    color_b_buf: [f32; 3],
+    palette_system: PaletteSystem,
 }
 
 impl GameScene {
     const INNER_SIZE: Vec2<i32> = Vec2::new(640, 360);
     pub fn new(ctx: &mut tetra::Context, level: Level) -> tetra::Result<GameScene> {
+        let palette = level.palette;
         Ok(GameScene {
             world: World::new(level),
-            color_a: Color::BLACK,
-            color_b: Color::WHITE,
             camera: Camera::new(Self::INNER_SIZE.x as f32, Self::INNER_SIZE.y as f32),
             scaler: ScreenScaler::with_window_size(
                 ctx,
@@ -48,9 +33,7 @@ impl GameScene {
                 Self::INNER_SIZE.y,
                 ScalingMode::ShowAll,
             )?,
-            dt: 0.,
-            color_a_buf: [0.; 3],
-            color_b_buf: [1.; 3],
+            palette_system: PaletteSystem::new(palette),
         })
     }
 }
@@ -68,7 +51,8 @@ impl Scene for GameScene {
             return Ok(Transition::Pop);
         }
 
-        self.dt += tetra::time::get_delta_time(ctx).as_secs_f32();
+        let dt = tetra::time::get_delta_time(ctx).as_secs_f32();
+
         self.world.update(ctx);
         self.camera.position = self.world.player_pos();
         let world_rect = self.world.get_world_rect();
@@ -86,38 +70,17 @@ impl Scene for GameScene {
             self.camera.position.y += world_rect.bottom() - cam_rect.bottom();
         }
         self.camera.update();
+        self.palette_system.update(dt);
         Ok(Transition::None)
-    }
-
-    fn egui_layout(
-        &mut self,
-        _ctx: &mut tetra::Context,
-        egui_ctx: &egui_tetra::egui::CtxRef,
-    ) -> Result<(), egui_tetra::Error> {
-        egui::Window::new("Background Color").show(egui_ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.label("Color A");
-                if ui.color_edit_button_rgb(&mut self.color_a_buf).changed() {
-                    self.color_a = buf_to_col(self.color_a_buf);
-                }
-            });
-            ui.horizontal(|ui| {
-                ui.label("Color B");
-                if ui.color_edit_button_rgb(&mut self.color_b_buf).changed() {
-                    self.color_b = buf_to_col(self.color_b_buf);
-                }
-            });
-        });
-        Ok(())
     }
 
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
         assets
             .shader
-            .set_uniform(ctx, "u_color_a", self.color_a.with_alpha(1.));
+            .set_uniform(ctx, "u_color_a", self.palette_system.dark());
         assets
             .shader
-            .set_uniform(ctx, "u_color_b", self.color_b.with_alpha(1.));
+            .set_uniform(ctx, "u_color_b", self.palette_system.light());
         assets.shader.set_uniform(
             ctx,
             "u_circle_offset",

@@ -44,6 +44,7 @@ impl World {
             dark_tilemap,
             light_tilemap,
             spawn_pos,
+            ..
         } = level;
         World {
             player: Player::new(spawn_pos),

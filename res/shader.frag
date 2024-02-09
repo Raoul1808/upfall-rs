@@ -17,10 +17,10 @@ uniform vec2 u_scale_offset;
 out vec4 o_color;
 
 float circle(vec2 uv, vec2 circle_pos, float radius) {
-    const float SMOOTHNESS = 0.5;
     float dist = distance(uv * u_resolution, circle_pos);
     float rad = radius * 2.0;
-    return 1.0 - smoothstep(rad - SMOOTHNESS, rad + SMOOTHNESS, dist);
+    float smoothness = fwidth(dist);
+    return 1.0 - smoothstep(rad - smoothness, rad, dist);
 }
 
 void main() {

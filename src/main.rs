@@ -1,7 +1,8 @@
+use egui_tetra::egui::CtxRef;
 use scenes::{EditorScene, Scene, Transition};
 use tetra::{
     graphics::{self, Color, Shader, Texture},
-    window, ContextBuilder, State,
+    window, ContextBuilder,
 };
 
 mod level;
@@ -50,19 +51,20 @@ impl GameState {
     }
 }
 
-impl State for GameState {
+impl egui_tetra::State for GameState {
     fn event(
         &mut self,
         ctx: &mut tetra::Context,
+        _egui_ctx: &CtxRef,
         event: tetra::Event,
-    ) -> Result<(), tetra::TetraError> {
+    ) -> Result<(), egui_tetra::Error> {
         if let Some(active_scene) = self.scenes.last_mut() {
             active_scene.event(ctx, event)?;
         }
         Ok(())
     }
 
-    fn update(&mut self, ctx: &mut tetra::Context) -> Result<(), tetra::TetraError> {
+    fn update(&mut self, ctx: &mut tetra::Context, _egui_ctx: &CtxRef) -> Result<(), egui_tetra::Error> {
         match self.scenes.last_mut() {
             Some(active_scene) => match active_scene.update(ctx)? {
                 Transition::None => {}
@@ -79,7 +81,7 @@ impl State for GameState {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut tetra::Context) -> tetra::Result {
+    fn draw(&mut self, ctx: &mut tetra::Context, _egui_ctx: &CtxRef) -> Result<(), egui_tetra::Error> {
         match self.scenes.last_mut() {
             Some(active_scene) => {
                 active_scene.draw(ctx, &self.assets)?;
@@ -92,10 +94,10 @@ impl State for GameState {
     }
 }
 
-fn main() -> tetra::Result {
+fn main() -> Result<(), egui_tetra::Error> {
     ContextBuilder::new("Upfall", 1280, 720)
         .resizable(true)
         .show_mouse(true)
         .build()?
-        .run(GameState::new)
+        .run(|ctx| Ok(egui_tetra::StateWrapper::new(GameState::new(ctx)?)))
 }

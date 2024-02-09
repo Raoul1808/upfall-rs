@@ -80,11 +80,6 @@ impl World {
     }
 
     pub fn update(&mut self, ctx: &mut tetra::Context) {
-        if input::is_key_pressed(ctx, Key::X) {
-            self.mode.switch();
-            self.player.on_world_change(self.mode);
-        }
-
         self.player.update(ctx);
 
         let tilemap = match self.mode {
@@ -107,6 +102,7 @@ impl World {
                 Tile::Portal(axis) => {
                     if self.player.can_traverse_portal(rect, *axis) {
                         self.mode.switch();
+                        self.player.on_world_change(self.mode);
                     }
                 }
             }

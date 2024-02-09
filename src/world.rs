@@ -1,3 +1,5 @@
+use core::fmt;
+
 use tetra::{
     graphics::{self, BlendState, Color, DrawParams, Rectangle},
     input::{self, Key},
@@ -15,6 +17,15 @@ use crate::{
 pub enum WorldMode {
     Dark,
     Light,
+}
+
+impl fmt::Display for WorldMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WorldMode::Dark => write!(f, "Dark"),
+            WorldMode::Light => write!(f, "Light"),
+        }
+    }
 }
 
 impl WorldMode {

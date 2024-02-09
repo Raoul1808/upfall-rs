@@ -7,7 +7,7 @@ pub trait Scene {
     fn event(&mut self, ctx: &mut tetra::Context, event: tetra::Event) -> tetra::Result {
         Ok(())
     }
-    fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition>;
+    fn update(&mut self, ctx: &mut tetra::Context, egui_ctx: &CtxRef) -> tetra::Result<Transition>;
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result;
     fn egui_layout(
         &mut self,

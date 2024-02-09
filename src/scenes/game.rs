@@ -1,3 +1,4 @@
+use egui_tetra::egui::CtxRef;
 use tetra::{
     graphics::{
         self,
@@ -46,7 +47,11 @@ impl Scene for GameScene {
         Ok(())
     }
 
-    fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition> {
+    fn update(
+        &mut self,
+        ctx: &mut tetra::Context,
+        _egui_ctx: &CtxRef,
+    ) -> tetra::Result<Transition> {
         if input::is_key_pressed(ctx, Key::Escape) {
             return Ok(Transition::Pop);
         }

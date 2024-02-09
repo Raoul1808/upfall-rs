@@ -1,5 +1,6 @@
 use std::cmp::{max, min};
 
+use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use tetra::{
     graphics::{Color, DrawParams, Rectangle},
@@ -24,7 +25,18 @@ pub enum Tile {
     Portal(Axis),
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+impl Tile {
+    pub fn type_str(&self) -> &str {
+        match self {
+            Tile::None => "None",
+            Tile::Solid => "Solid",
+            Tile::Spike(_) => "Spike",
+            Tile::Portal(_) => "Portal",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Display)]
 pub enum Facing {
     #[default]
     Up,
@@ -33,7 +45,7 @@ pub enum Facing {
     Right,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Display)]
 pub enum Axis {
     #[default]
     Vertical,
@@ -78,12 +90,14 @@ impl Tile {
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_facing(&mut self, facing: Facing) {
         if let Tile::Spike(ref mut f) = *self {
             *f = facing;
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_axis(&mut self, axis: Axis) {
         if let Tile::Portal(ref mut a) = *self {
             *a = axis;
@@ -216,6 +230,9 @@ impl Tilemap {
     }
 
     pub fn resize(&mut self, new_size: Vec2<usize>) {
+        if self.tilemap_size == new_size {
+            return;
+        }
         let new_total_size = new_size.x * new_size.y;
         let old_total_size = self.tilemap_size.x * self.tilemap_size.y;
         let mut new_map = vec![Tile::None; new_size.x * new_size.y];

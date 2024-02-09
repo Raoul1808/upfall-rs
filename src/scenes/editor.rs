@@ -1,4 +1,4 @@
-use egui_tetra::egui;
+use egui_tetra::egui::{self, CtxRef};
 use tetra::{
     graphics::{self, Camera, Color, DrawParams},
     input::{self, Key},
@@ -44,6 +44,8 @@ pub struct EditorScene {
 impl EditorScene {
     pub const TILEMAP_MIN_X: usize = 40;
     pub const TILEMAP_MIN_Y: usize = 23;
+    pub const TILEMAP_MAX_X: usize = 1000;
+    pub const TILEMAP_MAX_Y: usize = 1000;
 
     pub fn new(ctx: &mut tetra::Context) -> EditorScene {
         let tilemap_size = (80, 45);
@@ -67,113 +69,53 @@ impl EditorScene {
             },
         }
     }
-}
 
-impl Scene for EditorScene {
-    fn event(&mut self, _ctx: &mut tetra::Context, event: tetra::Event) -> tetra::Result {
-        if let Event::Resized { width, height } = event {
-            self.camera.set_viewport_size(width as f32, height as f32);
-        }
-        Ok(())
-    }
-
-    fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result<Transition> {
-        self.mouse_pos = self.camera.mouse_position(ctx);
-        let shift =
-            input::is_key_down(ctx, Key::LeftShift) || input::is_key_down(ctx, Key::RightShift);
+    fn keyboard_update(&mut self, ctx: &mut tetra::Context) {
         let ctrl =
             input::is_key_down(ctx, Key::LeftCtrl) || input::is_key_down(ctx, Key::RightCtrl);
-        if input::is_key_pressed(ctx, Key::Tab) {
-            self.mode.switch();
+        let shift =
+            input::is_key_down(ctx, Key::LeftShift) || input::is_key_down(ctx, Key::RightShift);
+
+        const CAMERA_MOVE: f32 = 5.;
+        const SCALE_FACTOR: f32 = 1.5;
+        if input::is_key_down(ctx, Key::A) {
+            self.camera.position.x -= CAMERA_MOVE;
         }
-        if input::is_key_pressed(ctx, Key::Num1) {
-            println!("solid!");
-            self.tile = Tile::Solid;
+        if input::is_key_down(ctx, Key::D) {
+            self.camera.position.x += CAMERA_MOVE;
         }
-        if input::is_key_pressed(ctx, Key::Num2) {
-            println!("spike!");
-            self.tile = Tile::Spike(self.facing);
+        if input::is_key_down(ctx, Key::W) {
+            self.camera.position.y -= CAMERA_MOVE;
         }
-        if input::is_key_pressed(ctx, Key::Num3) {
-            println!("portal!");
-            self.tile = Tile::Portal(self.axis);
+        if input::is_key_down(ctx, Key::S) {
+            self.camera.position.y += CAMERA_MOVE;
+        }
+        if input::is_key_pressed(ctx, Key::Equals) {
+            self.camera.scale *= SCALE_FACTOR;
+        }
+        if input::is_key_pressed(ctx, Key::Minus) {
+            self.camera.scale /= SCALE_FACTOR;
+            if self.camera.scale.x <= 1. {
+                self.camera.scale = Vec2::one();
+            }
         }
 
-        if input::is_key_pressed(ctx, Key::Up) {
-            self.facing = Facing::Up;
-            self.axis = Axis::Vertical;
-            self.tile.set_facing(self.facing);
-            self.tile.set_axis(self.axis);
-        }
-        if input::is_key_pressed(ctx, Key::Down) {
-            self.facing = Facing::Down;
-            self.axis = Axis::Vertical;
-            self.tile.set_facing(self.facing);
-            self.tile.set_axis(self.axis);
-        }
-        if input::is_key_pressed(ctx, Key::Left) {
-            self.facing = Facing::Left;
-            self.axis = Axis::Horizontal;
-            self.tile.set_facing(self.facing);
-            self.tile.set_axis(self.axis);
-        }
-        if input::is_key_pressed(ctx, Key::Right) {
-            self.facing = Facing::Right;
-            self.axis = Axis::Horizontal;
-            self.tile.set_facing(self.facing);
-            self.tile.set_axis(self.axis);
-        }
-
-        if shift && !ctrl {
-            if input::is_key_pressed(ctx, Key::A) && self.tilemap_size.x > Self::TILEMAP_MIN_X {
-                self.tilemap_size.x -= 1;
-                self.dark_tilemap.resize(self.tilemap_size);
-                self.light_tilemap.resize(self.tilemap_size);
-                println!("Tilemap is now size {}", self.tilemap_size);
-            }
-            if input::is_key_pressed(ctx, Key::D) {
-                self.tilemap_size.x += 1;
-                self.dark_tilemap.resize(self.tilemap_size);
-                self.light_tilemap.resize(self.tilemap_size);
-                println!("Tilemap is now size {}", self.tilemap_size);
-            }
-            if input::is_key_pressed(ctx, Key::W) && self.tilemap_size.y > Self::TILEMAP_MIN_Y {
-                self.tilemap_size.y -= 1;
-                self.dark_tilemap.resize(self.tilemap_size);
-                self.light_tilemap.resize(self.tilemap_size);
-                println!("Tilemap is now size {}", self.tilemap_size);
-            }
+        if ctrl && !shift {
             if input::is_key_pressed(ctx, Key::S) {
-                self.tilemap_size.y += 1;
-                self.dark_tilemap.resize(self.tilemap_size);
-                self.light_tilemap.resize(self.tilemap_size);
-                println!("Tilemap is now size {}", self.tilemap_size);
+                self.save_level();
             }
 
-            const CAMERA_MOVE: f32 = 5.;
-            const SCALE_FACTOR: f32 = 1.5;
-            if input::is_key_down(ctx, Key::Left) {
-                self.camera.position.x -= CAMERA_MOVE;
-            }
-            if input::is_key_down(ctx, Key::Right) {
-                self.camera.position.x += CAMERA_MOVE;
-            }
-            if input::is_key_down(ctx, Key::Up) {
-                self.camera.position.y -= CAMERA_MOVE;
-            }
-            if input::is_key_down(ctx, Key::Down) {
-                self.camera.position.y += CAMERA_MOVE;
-            }
-            if input::is_key_pressed(ctx, Key::Equals) {
-                self.camera.scale *= SCALE_FACTOR;
-            }
-            if input::is_key_pressed(ctx, Key::Minus) {
-                self.camera.scale /= SCALE_FACTOR;
-                if self.camera.scale.x <= 1. {
-                    self.camera.scale = Vec2::one();
-                }
+            if input::is_key_pressed(ctx, Key::O) {
+                self.load_level();
             }
         }
+    }
+
+    fn mouse_update(&mut self, ctx: &mut tetra::Context) {
+        let ctrl =
+            input::is_key_down(ctx, Key::LeftCtrl) || input::is_key_down(ctx, Key::RightCtrl);
+        let shift =
+            input::is_key_down(ctx, Key::LeftShift) || input::is_key_down(ctx, Key::RightShift);
 
         let tilemap = match self.mode {
             WorldMode::Dark => &mut self.dark_tilemap,
@@ -191,8 +133,57 @@ impl Scene for EditorScene {
         if !shift && !ctrl && input::is_mouse_button_down(ctx, input::MouseButton::Middle) {
             self.spawn_pos = tilemap.snap(self.mouse_pos);
         }
+    }
 
-        if input::is_key_pressed(ctx, Key::Enter) {
+    fn save_level(&self) {
+        let level = Level {
+            dark_tilemap: self.dark_tilemap.clone(),
+            light_tilemap: self.light_tilemap.clone(),
+            spawn_pos: self.spawn_pos,
+            palette: self.palette,
+        };
+        match level.save("level.umdx") {
+            Ok(_) => {}
+            Err(e) => println!("{:?}", e),
+        }
+    }
+
+    fn load_level(&mut self) {
+        match Level::load("level.umdx") {
+            Ok(l) => {
+                self.dark_tilemap = l.dark_tilemap;
+                self.light_tilemap = l.light_tilemap;
+                self.spawn_pos = l.spawn_pos;
+                self.palette = l.palette;
+            }
+            Err(e) => println!("{:?}", e),
+        }
+    }
+}
+
+impl Scene for EditorScene {
+    fn event(&mut self, _ctx: &mut tetra::Context, event: tetra::Event) -> tetra::Result {
+        if let Event::Resized { width, height } = event {
+            self.camera.set_viewport_size(width as f32, height as f32);
+        }
+        Ok(())
+    }
+
+    fn update(&mut self, ctx: &mut tetra::Context, egui_ctx: &CtxRef) -> tetra::Result<Transition> {
+        self.mouse_pos = self.camera.mouse_position(ctx);
+
+        let wants_keyboard = egui_ctx.wants_keyboard_input();
+        let wants_mouse = egui_ctx.wants_pointer_input();
+
+        if !wants_keyboard {
+            self.keyboard_update(ctx);
+        }
+
+        if !wants_mouse {
+            self.mouse_update(ctx)
+        }
+
+        if !wants_keyboard && !wants_mouse && input::is_key_pressed(ctx, Key::Enter) {
             let level = Level {
                 dark_tilemap: self.dark_tilemap.clone(),
                 light_tilemap: self.light_tilemap.clone(),
@@ -200,31 +191,6 @@ impl Scene for EditorScene {
                 palette: self.palette,
             };
             return Ok(Transition::Push(Box::new(GameScene::new(ctx, level)?)));
-        }
-
-        if ctrl && !shift {
-            if input::is_key_pressed(ctx, Key::S) {
-                let level = Level {
-                    dark_tilemap: self.dark_tilemap.clone(),
-                    light_tilemap: self.light_tilemap.clone(),
-                    spawn_pos: self.spawn_pos,
-                    palette: self.palette,
-                };
-                let res = level.save("level.umdx");
-                println!("{:?}", res.err());
-            }
-
-            if input::is_key_pressed(ctx, Key::O) {
-                match Level::load("level.umdx") {
-                    Ok(l) => {
-                        self.dark_tilemap = l.dark_tilemap;
-                        self.light_tilemap = l.light_tilemap;
-                        self.spawn_pos = l.spawn_pos;
-                        self.palette = l.palette;
-                    }
-                    Err(e) => println!("{:?}", e),
-                }
-            }
         }
 
         self.camera.update();
@@ -236,7 +202,66 @@ impl Scene for EditorScene {
         _ctx: &mut tetra::Context,
         egui_ctx: &egui_tetra::egui::CtxRef,
     ) -> Result<(), egui_tetra::Error> {
-        egui::Window::new("Palette").show(egui_ctx, |ui| {
+        egui::Window::new("Toolbox and Properties").show(egui_ctx, |ui| {
+            ui.horizontal(|ui| {
+                if ui.button("Load Level").clicked() {
+                    self.load_level();
+                }
+                if ui.button("Save Level").clicked() {
+                    self.save_level();
+                }
+            });
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label("Tilemap Size");
+                ui.add(
+                    egui::DragValue::new(&mut self.tilemap_size.x)
+                        .speed(0.1)
+                        .clamp_range(Self::TILEMAP_MIN_X..=Self::TILEMAP_MAX_X),
+                );
+                ui.add(
+                    egui::DragValue::new(&mut self.tilemap_size.y)
+                        .speed(0.1)
+                        .clamp_range(Self::TILEMAP_MIN_Y..=Self::TILEMAP_MAX_Y),
+                );
+                self.dark_tilemap.resize(self.tilemap_size);
+                self.light_tilemap.resize(self.tilemap_size);
+            });
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(format!("Current tilemap mode: {}", self.mode));
+                if ui.button("Switch").clicked() {
+                    self.mode.switch();
+                }
+            });
+            egui::ComboBox::from_label("Place Tile")
+                .selected_text(self.tile.type_str())
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut self.tile, Tile::Solid, "Solid");
+                    ui.selectable_value(&mut self.tile, Tile::Spike(self.facing), "Spike");
+                    ui.selectable_value(&mut self.tile, Tile::Portal(self.axis), "Portal");
+                });
+            if let Tile::Spike(ref mut facing) = self.tile {
+                egui::ComboBox::from_label("Facing")
+                    .selected_text(self.facing.to_string())
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut self.facing, Facing::Up, "Up");
+                        ui.selectable_value(&mut self.facing, Facing::Down, "Down");
+                        ui.selectable_value(&mut self.facing, Facing::Left, "Left");
+                        ui.selectable_value(&mut self.facing, Facing::Right, "Right");
+                    });
+                *facing = self.facing;
+            }
+            if let Tile::Portal(ref mut axis) = self.tile {
+                egui::ComboBox::from_label("Axis")
+                    .selected_text(self.axis.to_string())
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut self.axis, Axis::Horizontal, "Horizontal");
+                        ui.selectable_value(&mut self.axis, Axis::Vertical, "Vertical");
+                    });
+                *axis = self.axis;
+            }
+            ui.separator();
             egui::ComboBox::from_label("Palette Type")
                 .selected_text(self.palette.type_str())
                 .show_ui(ui, |ui| {

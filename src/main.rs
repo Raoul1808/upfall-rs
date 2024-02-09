@@ -1,4 +1,4 @@
-use egui_tetra::egui::{self, CtxRef};
+use egui_tetra::egui::CtxRef;
 use scenes::{EditorScene, Scene, Transition};
 use tetra::{
     graphics::{self, Color, Shader, Texture},
@@ -68,13 +68,13 @@ impl egui_tetra::State for GameState {
     fn update(
         &mut self,
         ctx: &mut tetra::Context,
-        _egui_ctx: &CtxRef,
+        egui_ctx: &CtxRef,
     ) -> Result<(), egui_tetra::Error> {
         match self.scenes.last_mut() {
-            Some(active_scene) => match active_scene.update(ctx)? {
+            Some(active_scene) => match active_scene.update(ctx, egui_ctx)? {
                 Transition::None => {}
                 Transition::Push(mut scene) => {
-                    scene.update(ctx)?;
+                    scene.update(ctx, egui_ctx)?;
                     self.scenes.push(scene);
                 }
                 Transition::Pop => {
@@ -86,11 +86,7 @@ impl egui_tetra::State for GameState {
         Ok(())
     }
 
-    fn ui(
-        &mut self,
-        ctx: &mut tetra::Context,
-        egui_ctx: &egui::CtxRef,
-    ) -> Result<(), egui_tetra::Error> {
+    fn ui(&mut self, ctx: &mut tetra::Context, egui_ctx: &CtxRef) -> Result<(), egui_tetra::Error> {
         if let Some(active_scene) = self.scenes.last_mut() {
             active_scene.egui_layout(ctx, egui_ctx)?;
         }

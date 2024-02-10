@@ -77,6 +77,45 @@ impl EditorScene {
             input::is_key_down(ctx, Key::LeftCtrl) || input::is_key_down(ctx, Key::RightCtrl);
         let shift =
             input::is_key_down(ctx, Key::LeftShift) || input::is_key_down(ctx, Key::RightShift);
+        
+        if input::is_key_pressed(ctx, Key::Num1) {
+            self.tile = Tile::Solid;
+        }
+        if input::is_key_pressed(ctx, Key::Num2) {
+            self.tile = Tile::Spike(self.facing);
+        }
+        if input::is_key_pressed(ctx, Key::Num3) {
+            self.tile = Tile::Portal(self.axis);
+        }
+
+        if input::is_key_pressed(ctx, Key::Up) {
+            self.axis = Axis::Vertical;
+            self.facing = Facing::Up;
+            self.tile.set_facing(self.facing);
+            self.tile.set_axis(self.axis);
+        }
+        if input::is_key_pressed(ctx, Key::Down) {
+            self.axis = Axis::Vertical;
+            self.facing = Facing::Down;
+            self.tile.set_facing(self.facing);
+            self.tile.set_axis(self.axis);
+        }
+        if input::is_key_pressed(ctx, Key::Left) {
+            self.axis = Axis::Horizontal;
+            self.facing = Facing::Left;
+            self.tile.set_facing(self.facing);
+            self.tile.set_axis(self.axis);
+        }
+        if input::is_key_pressed(ctx, Key::Right) {
+            self.axis = Axis::Horizontal;
+            self.facing = Facing::Right;
+            self.tile.set_facing(self.facing);
+            self.tile.set_axis(self.axis);
+        }
+
+        if input::is_key_pressed(ctx, Key::T) {
+            self.mode.switch();
+        }
 
         const CAMERA_MOVE: f32 = 5.;
         if input::is_key_down(ctx, Key::A) {

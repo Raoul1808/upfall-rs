@@ -39,6 +39,9 @@ pub struct EditorScene {
     tilemap_size: Vec2<usize>,
     camera: Camera,
     palette: Palette,
+    level_name: String,
+    level_author: String,
+    quit: bool,
 }
 
 impl EditorScene {
@@ -48,6 +51,8 @@ impl EditorScene {
     pub const TILEMAP_MAX_Y: usize = 1000;
     pub const ZOOM_MIN: f32 = 1.0;
     pub const ZOOM_MAX: f32 = 8.0;
+    pub const DEFAULT_LEVEL_NAME: &'static str = "Untitled Level";
+    pub const DEFAULT_AUTHOR_NAME: &'static str = "Unnamed Mapmaker";
 
     pub fn new(ctx: &mut tetra::Context) -> EditorScene {
         let tilemap_size = (80, 45);
@@ -69,6 +74,9 @@ impl EditorScene {
                 dark: Color::BLACK,
                 light: Color::WHITE,
             },
+            level_name: Self::DEFAULT_LEVEL_NAME.to_string(),
+            level_author: Self::DEFAULT_AUTHOR_NAME.to_string(),
+            quit: false,
         }
     }
 
@@ -168,6 +176,8 @@ impl EditorScene {
 
     fn save_level(&self) {
         let level = Level {
+            name: self.level_name.clone(),
+            author: self.level_author.clone(),
             dark_tilemap: self.dark_tilemap.clone(),
             light_tilemap: self.light_tilemap.clone(),
             spawn_pos: self.spawn_pos,
@@ -186,6 +196,8 @@ impl EditorScene {
                 self.light_tilemap = l.light_tilemap;
                 self.spawn_pos = l.spawn_pos;
                 self.palette = l.palette;
+                self.level_name = l.name;
+                self.level_author = l.author;
             }
             Err(e) => println!("{:?}", e),
         }
@@ -201,6 +213,9 @@ impl Scene for EditorScene {
     }
 
     fn update(&mut self, ctx: &mut tetra::Context, egui_ctx: &CtxRef) -> tetra::Result<Transition> {
+        if self.quit {
+            return Ok(Transition::Pop);
+        }
         self.mouse_pos = self.camera.mouse_position(ctx);
 
         let wants_keyboard = egui_ctx.wants_keyboard_input();
@@ -216,6 +231,8 @@ impl Scene for EditorScene {
 
         if !wants_keyboard && !wants_mouse && input::is_key_pressed(ctx, Key::Enter) {
             let level = Level {
+                name: self.level_name.clone(),
+                author: self.level_author.clone(),
                 dark_tilemap: self.dark_tilemap.clone(),
                 light_tilemap: self.light_tilemap.clone(),
                 spawn_pos: self.spawn_pos,
@@ -243,6 +260,14 @@ impl Scene for EditorScene {
                 }
             });
             ui.separator();
+            ui.horizontal(|ui| {
+                ui.label("Level Name");
+                ui.text_edit_singleline(&mut self.level_name);
+            });
+            ui.horizontal(|ui| {
+                ui.label("Levle Author");
+                ui.text_edit_singleline(&mut self.level_author);
+            });
             ui.horizontal(|ui| {
                 ui.label("Tilemap Size");
                 ui.add(
@@ -332,6 +357,10 @@ impl Scene for EditorScene {
                     color_egui(ui, "Second Light Color", light2);
                 }
                 _ => {}
+            }
+            ui.separator();
+            if ui.button("Quit Editor").clicked() {
+                self.quit = true;
             }
         });
         Ok(())

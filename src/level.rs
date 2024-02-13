@@ -8,6 +8,8 @@ use crate::{palette::Palette, tilemap::Tilemap};
 
 #[derive(Serialize, Deserialize)]
 pub struct Level {
+    pub name: String,
+    pub author: String,
     pub dark_tilemap: Tilemap,
     pub light_tilemap: Tilemap,
     pub palette: Palette,

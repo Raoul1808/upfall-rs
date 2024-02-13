@@ -281,7 +281,7 @@ impl Scene for EditorScene {
                 ui.text_edit_singleline(&mut self.level.name);
             });
             ui.horizontal(|ui| {
-                ui.label("Levle Author");
+                ui.label("Level Author");
                 ui.text_edit_singleline(&mut self.level.author);
             });
             ui.horizontal(|ui| {

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use egui_tetra::egui::{self, CtxRef};
 use tetra::{
     graphics::{self, Camera, Color, DrawParams},
@@ -36,6 +38,7 @@ pub struct EditorScene {
     tile: Tile,
     camera: Camera,
     quit: bool,
+    level_path: Option<PathBuf>,
 }
 
 impl EditorScene {
@@ -63,6 +66,7 @@ impl EditorScene {
             tile: Tile::Solid,
             camera,
             quit: false,
+            level_path: None,
         }
     }
 
@@ -173,21 +177,43 @@ impl EditorScene {
 
     fn new_level(&mut self) {
         self.level = Self::default_level();
+        self.level_path = None;
     }
 
-    fn save_level(&self) {
-        match self.level.save("level.umdx") {
-            Ok(_) => {}
-            Err(e) => println!("{:?}", e),
+    fn save_level(&mut self) {
+        match &self.level_path {
+            Some(p) => match self.level.save(&p) {
+                Ok(_) => {},
+                Err(e) => println!("Error saving level at {}: {:?}", p.display(), e),
+            }
+            None => self.save_level_as(),
+        }
+    }
+
+    fn save_level_as(&mut self) {
+        self.level_path = rfd::FileDialog::new()
+            .add_filter("Upfall-RS Map Data", &["umdx"])
+            .save_file();
+        if let Some(p) = &self.level_path {
+            match self.level.save(&p) {
+                Ok(_) => {},
+                Err(e) => println!("Error saving level at {}: {:?}", p.display(), e),
+            }
         }
     }
 
     fn load_level(&mut self) {
-        match Level::load("level.umdx") {
-            Ok(l) => {
-                self.level = l;
+        let file = rfd::FileDialog::new()
+            .add_filter("Upfall-RS Map Data", &["umdx"])
+            .pick_file();
+        if let Some(file) = file {
+            match Level::load(&file) {
+                Ok(l) => {
+                    self.level = l;
+                    self.level_path = Some(file);
+                }
+                Err(e) => println!("Error loading level at {}: {:?}", file.display(), e),
             }
-            Err(e) => println!("{:?}", e),
         }
     }
 }
@@ -234,15 +260,19 @@ impl Scene for EditorScene {
         egui_ctx: &egui_tetra::egui::CtxRef,
     ) -> Result<(), egui_tetra::Error> {
         egui::Window::new("Toolbox and Properties").show(egui_ctx, |ui| {
+            ui.label(format!("Current level: {:?}", self.level_path));
             ui.horizontal(|ui| {
-                if ui.button("New Level").clicked() {
+                if ui.button("New").clicked() {
                     self.new_level();
                 }
-                if ui.button("Load Level").clicked() {
+                if ui.button("Open").clicked() {
                     self.load_level();
                 }
-                if ui.button("Save Level").clicked() {
+                if ui.button("Save").clicked() {
                     self.save_level();
+                }
+                if ui.button("Save As").clicked() {
+                    self.save_level_as();
                 }
             });
             ui.separator();

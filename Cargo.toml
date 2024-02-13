@@ -10,5 +10,6 @@ bincode = "1.3.3"
 derive_more = "0.99.17"
 egui-tetra = { git = "https://github.com/Raoul1808/egui-tetra" }
 keyframe = "1.1.1"
+rfd = "0.13.0"
 serde = { version = "1.0.196", features = ["derive"] }
 tetra = { version = "0.8.0", features = ["serde_support"] }

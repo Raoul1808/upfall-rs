@@ -1,5 +1,5 @@
 use egui_tetra::egui::CtxRef;
-use scenes::{EditorScene, Scene, Transition};
+use scenes::{Scene, StartScene, Transition};
 use tetra::{
     graphics::{self, Color, Shader, Texture},
     window, ContextBuilder,
@@ -47,7 +47,7 @@ impl GameState {
     fn new(ctx: &mut tetra::Context) -> tetra::Result<GameState> {
         Ok(GameState {
             assets: Assets::load(ctx)?,
-            scenes: vec![Box::new(EditorScene::new(ctx))],
+            scenes: vec![Box::new(StartScene::new())],
         })
     }
 }

@@ -26,6 +26,8 @@ pub enum Transition {
 
 mod editor;
 mod game;
+mod start;
 
 pub use editor::EditorScene;
 pub use game::GameScene;
+pub use start::StartScene;

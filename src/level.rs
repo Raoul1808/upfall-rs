@@ -6,7 +6,7 @@ use tetra::math::Vec2;
 
 use crate::{palette::Palette, tilemap::Tilemap};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Level {
     pub name: String,
     pub author: String,

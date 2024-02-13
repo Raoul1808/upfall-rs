@@ -28,19 +28,13 @@ fn color_egui(ui: &mut egui::Ui, label: &str, color: &mut Color) {
 }
 
 pub struct EditorScene {
-    dark_tilemap: Tilemap,
-    light_tilemap: Tilemap,
-    mode: WorldMode,
-    spawn_pos: Vec2<f32>,
+    level: Level,
+    world_mode: WorldMode,
     mouse_pos: Vec2<f32>,
     facing: Facing,
     axis: Axis,
     tile: Tile,
-    tilemap_size: Vec2<usize>,
     camera: Camera,
-    palette: Palette,
-    level_name: String,
-    level_author: String,
     quit: bool,
 }
 
@@ -53,30 +47,33 @@ impl EditorScene {
     pub const ZOOM_MAX: f32 = 8.0;
     pub const DEFAULT_LEVEL_NAME: &'static str = "Untitled Level";
     pub const DEFAULT_AUTHOR_NAME: &'static str = "Unnamed Mapmaker";
+    pub const DEFAULT_TILEMAP_SIZE: (usize, usize) = (80, 45);
+    pub const DEFAULT_TILE_SIZE: (f32, f32) = (16., 16.);
 
     pub fn new(ctx: &mut tetra::Context) -> EditorScene {
-        let tilemap_size = (80, 45);
         let mut camera = Camera::with_window_size(ctx);
         camera.position = camera.visible_rect().bottom_right();
         camera.update();
         EditorScene {
-            dark_tilemap: Tilemap::new(tilemap_size, (16., 16.)),
-            light_tilemap: Tilemap::new(tilemap_size, (16., 16.)),
-            mode: WorldMode::Dark,
-            spawn_pos: Vec2::default(),
+            level: Self::default_level(),
+            world_mode: WorldMode::Dark,
             mouse_pos: Vec2::default(),
             facing: Facing::Up,
             axis: Axis::Horizontal,
             tile: Tile::Solid,
-            tilemap_size: tilemap_size.into(),
             camera,
-            palette: Palette::Simple {
-                dark: Color::BLACK,
-                light: Color::WHITE,
-            },
-            level_name: Self::DEFAULT_LEVEL_NAME.to_string(),
-            level_author: Self::DEFAULT_AUTHOR_NAME.to_string(),
             quit: false,
+        }
+    }
+
+    pub fn default_level() -> Level {
+        Level {
+            name: Self::DEFAULT_LEVEL_NAME.to_string(),
+            author: Self::DEFAULT_AUTHOR_NAME.to_string(),
+            dark_tilemap: Tilemap::new(Self::DEFAULT_TILEMAP_SIZE, Self::DEFAULT_TILE_SIZE),
+            light_tilemap: Tilemap::new(Self::DEFAULT_TILEMAP_SIZE, Self::DEFAULT_TILE_SIZE),
+            palette: Palette::default(),
+            spawn_pos: Vec2::zero(),
         }
     }
 
@@ -85,7 +82,7 @@ impl EditorScene {
             input::is_key_down(ctx, Key::LeftCtrl) || input::is_key_down(ctx, Key::RightCtrl);
         let shift =
             input::is_key_down(ctx, Key::LeftShift) || input::is_key_down(ctx, Key::RightShift);
-        
+
         if input::is_key_pressed(ctx, Key::Num1) {
             self.tile = Tile::Solid;
         }
@@ -122,7 +119,7 @@ impl EditorScene {
         }
 
         if input::is_key_pressed(ctx, Key::T) {
-            self.mode.switch();
+            self.world_mode.switch();
         }
 
         const CAMERA_MOVE: f32 = 5.;
@@ -156,9 +153,9 @@ impl EditorScene {
         let shift =
             input::is_key_down(ctx, Key::LeftShift) || input::is_key_down(ctx, Key::RightShift);
 
-        let tilemap = match self.mode {
-            WorldMode::Dark => &mut self.dark_tilemap,
-            WorldMode::Light => &mut self.light_tilemap,
+        let tilemap = match self.world_mode {
+            WorldMode::Dark => &mut self.level.dark_tilemap,
+            WorldMode::Light => &mut self.level.light_tilemap,
         };
 
         if !shift && !ctrl && input::is_mouse_button_down(ctx, input::MouseButton::Left) {
@@ -170,20 +167,16 @@ impl EditorScene {
         }
 
         if !shift && !ctrl && input::is_mouse_button_down(ctx, input::MouseButton::Middle) {
-            self.spawn_pos = tilemap.snap(self.mouse_pos);
+            self.level.spawn_pos = tilemap.snap(self.mouse_pos);
         }
     }
 
+    fn new_level(&mut self) {
+        self.level = Self::default_level();
+    }
+
     fn save_level(&self) {
-        let level = Level {
-            name: self.level_name.clone(),
-            author: self.level_author.clone(),
-            dark_tilemap: self.dark_tilemap.clone(),
-            light_tilemap: self.light_tilemap.clone(),
-            spawn_pos: self.spawn_pos,
-            palette: self.palette,
-        };
-        match level.save("level.umdx") {
+        match self.level.save("level.umdx") {
             Ok(_) => {}
             Err(e) => println!("{:?}", e),
         }
@@ -192,12 +185,7 @@ impl EditorScene {
     fn load_level(&mut self) {
         match Level::load("level.umdx") {
             Ok(l) => {
-                self.dark_tilemap = l.dark_tilemap;
-                self.light_tilemap = l.light_tilemap;
-                self.spawn_pos = l.spawn_pos;
-                self.palette = l.palette;
-                self.level_name = l.name;
-                self.level_author = l.author;
+                self.level = l;
             }
             Err(e) => println!("{:?}", e),
         }
@@ -230,15 +218,10 @@ impl Scene for EditorScene {
         }
 
         if !wants_keyboard && !wants_mouse && input::is_key_pressed(ctx, Key::Enter) {
-            let level = Level {
-                name: self.level_name.clone(),
-                author: self.level_author.clone(),
-                dark_tilemap: self.dark_tilemap.clone(),
-                light_tilemap: self.light_tilemap.clone(),
-                spawn_pos: self.spawn_pos,
-                palette: self.palette,
-            };
-            return Ok(Transition::Push(Box::new(GameScene::new(ctx, level)?)));
+            return Ok(Transition::Push(Box::new(GameScene::new(
+                ctx,
+                self.level.clone(),
+            )?)));
         }
 
         self.camera.update();
@@ -252,6 +235,9 @@ impl Scene for EditorScene {
     ) -> Result<(), egui_tetra::Error> {
         egui::Window::new("Toolbox and Properties").show(egui_ctx, |ui| {
             ui.horizontal(|ui| {
+                if ui.button("New Level").clicked() {
+                    self.new_level();
+                }
                 if ui.button("Load Level").clicked() {
                     self.load_level();
                 }
@@ -262,26 +248,27 @@ impl Scene for EditorScene {
             ui.separator();
             ui.horizontal(|ui| {
                 ui.label("Level Name");
-                ui.text_edit_singleline(&mut self.level_name);
+                ui.text_edit_singleline(&mut self.level.name);
             });
             ui.horizontal(|ui| {
                 ui.label("Levle Author");
-                ui.text_edit_singleline(&mut self.level_author);
+                ui.text_edit_singleline(&mut self.level.author);
             });
             ui.horizontal(|ui| {
                 ui.label("Tilemap Size");
+                let mut tilemap_size = self.level.dark_tilemap.size();
                 ui.add(
-                    egui::DragValue::new(&mut self.tilemap_size.x)
+                    egui::DragValue::new(&mut tilemap_size.x)
                         .speed(0.1)
                         .clamp_range(Self::TILEMAP_MIN_X..=Self::TILEMAP_MAX_X),
                 );
                 ui.add(
-                    egui::DragValue::new(&mut self.tilemap_size.y)
+                    egui::DragValue::new(&mut tilemap_size.y)
                         .speed(0.1)
                         .clamp_range(Self::TILEMAP_MIN_Y..=Self::TILEMAP_MAX_Y),
                 );
-                self.dark_tilemap.resize(self.tilemap_size);
-                self.light_tilemap.resize(self.tilemap_size);
+                self.level.dark_tilemap.resize(tilemap_size);
+                self.level.light_tilemap.resize(tilemap_size);
             });
             ui.separator();
             ui.horizontal(|ui| {
@@ -296,9 +283,9 @@ impl Scene for EditorScene {
                 self.camera.update();
             });
             ui.horizontal(|ui| {
-                ui.label(format!("Current tilemap mode: {}", self.mode));
+                ui.label(format!("Current tilemap mode: {}", self.world_mode));
                 if ui.button("Switch").clicked() {
-                    self.mode.switch();
+                    self.world_mode.switch();
                 }
             });
             egui::ComboBox::from_label("Place Tile")
@@ -330,14 +317,14 @@ impl Scene for EditorScene {
             }
             ui.separator();
             egui::ComboBox::from_label("Palette Type")
-                .selected_text(self.palette.type_str())
+                .selected_text(self.level.palette.type_str())
                 .show_ui(ui, |ui| {
                     for palette in Palette::default_all() {
-                        ui.selectable_value(&mut self.palette, palette, palette.type_str());
+                        ui.selectable_value(&mut self.level.palette, palette, palette.type_str());
                     }
                 });
 
-            match self.palette {
+            match self.level.palette {
                 Palette::Simple {
                     ref mut dark,
                     ref mut light,
@@ -369,7 +356,7 @@ impl Scene for EditorScene {
     fn draw(&mut self, ctx: &mut tetra::Context, assets: &Assets) -> tetra::Result {
         graphics::clear(ctx, Color::BLACK);
         graphics::set_transform_matrix(ctx, self.camera.as_matrix());
-        let tilemap_rect = self.dark_tilemap.rect();
+        let tilemap_rect = self.level.dark_tilemap.rect();
         assets.pixel.draw(
             ctx,
             DrawParams::new()
@@ -377,23 +364,30 @@ impl Scene for EditorScene {
                 .scale(tilemap_rect.bottom_right())
                 .color(Color::rgb8(100, 149, 237)),
         );
-        let (dark_alpha, light_alpha) = match self.mode {
+        let (dark_alpha, light_alpha) = match self.world_mode {
             WorldMode::Dark => (1., 0.33),
             WorldMode::Light => (0.33, 1.),
         };
-        self.dark_tilemap
+        self.level
+            .dark_tilemap
             .render_tilemap(ctx, assets, Color::WHITE.with_alpha(dark_alpha));
-        self.light_tilemap
+        self.level
+            .light_tilemap
             .render_tilemap(ctx, assets, Color::BLACK.with_alpha(light_alpha));
         assets
             .player
-            .draw(ctx, DrawParams::new().position(self.spawn_pos));
-        if self.dark_tilemap.rect().contains_point(self.mouse_pos) {
+            .draw(ctx, DrawParams::new().position(self.level.spawn_pos));
+        if self
+            .level
+            .dark_tilemap
+            .rect()
+            .contains_point(self.mouse_pos)
+        {
             assets.pixel.draw(
                 ctx,
                 DrawParams::new()
-                    .position(self.dark_tilemap.snap(self.mouse_pos))
-                    .scale(self.dark_tilemap.tile_size())
+                    .position(self.level.dark_tilemap.snap(self.mouse_pos))
+                    .scale(self.level.dark_tilemap.tile_size())
                     .color(Color::WHITE.with_alpha(1. / 3.)),
             );
         }

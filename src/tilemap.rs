@@ -126,6 +126,10 @@ impl Tilemap {
         self.tile_size
     }
 
+    pub fn size(&self) -> Vec2<usize> {
+        self.tilemap_size
+    }
+
     pub fn rect(&self) -> Rectangle {
         Rectangle::new(
             0.,

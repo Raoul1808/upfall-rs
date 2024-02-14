@@ -1,3 +1,5 @@
 # Credits
 ## Assets
-- [Door sprite](res/sprites/door.png) made by [FrostC](https://github.com/Frostwithasideofsalt)
+- Made by [FrostC](https://github.com/Frostwithasideofsalt):
+  - [Door sprite](res/sprites/door.png)
+  - [Spikes sprite](res/sprites/spike.png)

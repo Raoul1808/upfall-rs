@@ -8,6 +8,8 @@ use tetra::{
     math::{num_traits::clamp, Vec3},
 };
 
+use crate::util::HsvColor;
+
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Palette {
     Simple {
@@ -98,11 +100,13 @@ pub struct PaletteSystem {
     start_timer: f32,
     lerp_progress: f32,
     lerp_back: bool,
+    current_hue: f32,
 }
 
 impl PaletteSystem {
     const LERP_TIME: f32 = 4.;
     const START_TIME: f32 = 1.;
+    const HUE_CYCLE_TIME: f32 = 6.;
 
     pub fn new(palette: Palette) -> Self {
         let mut ps = Self {
@@ -116,6 +120,7 @@ impl PaletteSystem {
             start_timer: 0.,
             lerp_progress: 0.,
             lerp_back: false,
+            current_hue: 0.,
         };
         ps.change_palette(palette);
         ps
@@ -130,6 +135,7 @@ impl PaletteSystem {
         self.from_light = self.current_light;
         self.start_dark = self.current_dark;
         self.start_light = self.current_light;
+        self.current_hue = 0.;
     }
 
     pub fn update(&mut self, dt: f32) {
@@ -157,7 +163,18 @@ impl PaletteSystem {
                 self.current_light = color_lerp(light1, light2, easing);
             }
             Palette::Trippy => {
-                todo!("do HSL shit here")
+                let mut hue = self.current_hue;
+                hue += dt / Self::HUE_CYCLE_TIME;
+                if hue >= 1. {
+                    hue -= 1.;
+                }
+                self.current_hue = hue;
+                self.current_dark = HsvColor::new(hue, 1., 1.).into();
+                hue += 0.5;
+                if hue >= 1. {
+                    hue -= 1.;
+                }
+                self.current_light = HsvColor::new(hue, 1., 1.).into();
             }
         }
         if self.start_timer < 1. {

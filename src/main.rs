@@ -10,6 +10,7 @@ mod palette;
 mod player;
 mod scenes;
 mod tilemap;
+mod util;
 mod world;
 
 pub struct Assets {

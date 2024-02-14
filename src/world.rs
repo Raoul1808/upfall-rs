@@ -86,11 +86,15 @@ impl World {
     }
 
     pub fn update(&mut self, ctx: &mut tetra::Context) {
+        if self.win {
+            return;
+        }
         self.player.update(ctx);
 
         if self.player.get_hbox().intersects(&self.end_rect) {
             // win!!
             self.win = true;
+            return;
         }
 
         let tilemap = match self.mode {

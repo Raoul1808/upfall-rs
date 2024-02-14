@@ -10,7 +10,12 @@ use tetra::{
     Event,
 };
 
-use crate::{level::Level, palette::PaletteSystem, world::World, Assets, Scene};
+use crate::{
+    level::{Level, LevelPack},
+    palette::PaletteSystem,
+    world::World,
+    Assets, Scene,
+};
 
 use super::Transition;
 
@@ -19,12 +24,19 @@ pub struct GameScene {
     camera: Camera,
     scaler: ScreenScaler,
     palette_system: PaletteSystem,
+    level_pack: LevelPack,
+    current_level: usize,
+    playtest: bool,
 }
 
 impl GameScene {
     const INNER_SIZE: Vec2<i32> = Vec2::new(640, 360);
     pub fn new(ctx: &mut tetra::Context, level: Level) -> tetra::Result<GameScene> {
         let palette = level.palette;
+        let level_pack = LevelPack {
+            levels: vec![level.clone()],
+            ..Default::default()
+        };
         Ok(GameScene {
             world: World::new(level),
             camera: Camera::new(Self::INNER_SIZE.x as f32, Self::INNER_SIZE.y as f32),
@@ -35,6 +47,28 @@ impl GameScene {
                 ScalingMode::ShowAll,
             )?,
             palette_system: PaletteSystem::new(palette),
+            level_pack,
+            current_level: 0,
+            playtest: true,
+        })
+    }
+
+    pub fn with_pack(ctx: &mut tetra::Context, pack: LevelPack) -> tetra::Result<GameScene> {
+        let first_level = &pack.levels[0];
+        let palette = first_level.palette;
+        Ok(GameScene {
+            world: World::new(first_level.clone()),
+            camera: Camera::new(Self::INNER_SIZE.x as f32, Self::INNER_SIZE.y as f32),
+            scaler: ScreenScaler::with_window_size(
+                ctx,
+                Self::INNER_SIZE.x,
+                Self::INNER_SIZE.y,
+                ScalingMode::ShowAll,
+            )?,
+            palette_system: PaletteSystem::new(palette),
+            level_pack: pack,
+            current_level: 0,
+            playtest: false,
         })
     }
 }
@@ -60,7 +94,20 @@ impl Scene for GameScene {
 
         self.world.update(ctx);
         if self.world.win() {
-            return Ok(Transition::Pop);
+            match self.playtest {
+                true => {
+                    self.world.reset();
+                }
+                false => {
+                    self.current_level += 1;
+                    if self.current_level == self.level_pack.levels.len() {
+                        return Ok(Transition::Pop);
+                    }
+                    let next_level = self.level_pack.levels[self.current_level].clone();
+                    self.palette_system.change_palette(next_level.palette);
+                    self.world = World::new(next_level);
+                }
+            }
         }
         self.camera.position = self.world.player_pos();
         let world_rect = self.world.get_world_rect();

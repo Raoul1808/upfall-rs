@@ -1,0 +1,5 @@
+The game detects a level pack as being a directory in this directory with multiple levels (.umdx files).
+If a directory doesn't contain any levels files, the corresponding pack will not appear in the game.
+If you place your levels in this directory, the game won't be able to detect them as they do not belong in any specific pack.
+
+The game will cycle through levels in alphabetical order. If you want your levels to be played in a certain order, prefix the file names with a number (e.g: 01, 02, 727, etc...)

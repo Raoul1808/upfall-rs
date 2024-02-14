@@ -187,7 +187,7 @@ impl EditorScene {
 
     fn save_level(&mut self) {
         match &self.level_path {
-            Some(p) => match self.level.save(p) {
+            Some(p) => match self.level.save_file(p) {
                 Ok(_) => {}
                 Err(e) => println!("Error saving level at {}: {:?}", p.display(), e),
             },
@@ -200,7 +200,7 @@ impl EditorScene {
             .add_filter("Upfall-RS Map Data", &["umdx"])
             .save_file();
         if let Some(p) = &self.level_path {
-            match self.level.save(p) {
+            match self.level.save_file(p) {
                 Ok(_) => {}
                 Err(e) => println!("Error saving level at {}: {:?}", p.display(), e),
             }
@@ -212,7 +212,7 @@ impl EditorScene {
             .add_filter("Upfall-RS Map Data", &["umdx"])
             .pick_file();
         if let Some(file) = file {
-            match Level::load(&file) {
+            match Level::load_file(&file) {
                 Ok(l) => {
                     self.level = l;
                     self.level_path = Some(file);

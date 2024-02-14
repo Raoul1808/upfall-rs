@@ -55,7 +55,6 @@ impl LevelPack {
         let mut levels = vec![];
         let entries: std::io::Result<Vec<fs::DirEntry>> = fs::read_dir(path.as_ref())
             .map_err(LevelError::Io)?
-            .into_iter()
             .collect();
         let mut entries = entries.map_err(LevelError::Io)?;
         entries.sort_by_key(|e| e.path());

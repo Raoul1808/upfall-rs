@@ -18,7 +18,11 @@ impl StartScene {
 }
 
 impl Scene for StartScene {
-    fn update(&mut self, ctx: &mut tetra::Context, _egui_ctx: &egui_tetra::egui::CtxRef) -> tetra::Result<Transition> {
+    fn update(
+        &mut self,
+        ctx: &mut tetra::Context,
+        _egui_ctx: &egui_tetra::egui::CtxRef,
+    ) -> tetra::Result<Transition> {
         if self.editor {
             self.editor = false;
             return Ok(Transition::Push(Box::new(EditorScene::new(ctx))));
@@ -30,10 +34,10 @@ impl Scene for StartScene {
     }
 
     fn egui_layout(
-            &mut self,
-            _ctx: &mut tetra::Context,
-            egui_ctx: &egui_tetra::egui::CtxRef,
-        ) -> Result<(), egui_tetra::Error> {
+        &mut self,
+        _ctx: &mut tetra::Context,
+        egui_ctx: &egui_tetra::egui::CtxRef,
+    ) -> Result<(), egui_tetra::Error> {
         egui::Window::new("Upfall").show(egui_ctx, |ui| {
             ui.heading("PLACEHOLDER MENU");
             ui.label("This menu will not be present in the final 1.0 version of the game, as a proper menu system is still being worked on.");

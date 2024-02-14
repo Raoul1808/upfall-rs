@@ -59,6 +59,9 @@ impl Scene for GameScene {
         let dt = tetra::time::get_delta_time(ctx).as_secs_f32();
 
         self.world.update(ctx);
+        if self.world.win() {
+            return Ok(Transition::Pop);
+        }
         self.camera.position = self.world.player_pos();
         let world_rect = self.world.get_world_rect();
         let cam_rect = self.camera.visible_rect();

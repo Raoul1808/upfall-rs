@@ -14,6 +14,7 @@ pub struct Level {
     pub light_tilemap: Tilemap,
     pub palette: Palette,
     pub spawn_pos: Vec2<f32>,
+    pub end_pos: Vec2<f32>,
 }
 
 #[derive(Debug)]

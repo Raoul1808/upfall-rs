@@ -18,6 +18,7 @@ pub struct Assets {
     player: Texture,
     spike: Texture,
     tile: Texture,
+    door: Texture,
 }
 
 impl Assets {
@@ -34,6 +35,7 @@ impl Assets {
             player: Texture::new(ctx, "res/sprites/player.png")?,
             spike: Texture::new(ctx, "res/sprites/spike.png")?,
             tile: Texture::new(ctx, "res/sprites/tile.png")?,
+            door: Texture::new(ctx, "res/sprites/door.png")?,
         })
     }
 }

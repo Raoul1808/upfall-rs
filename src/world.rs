@@ -47,6 +47,8 @@ pub struct World {
     light_tilemap: Tilemap,
     mode: WorldMode,
     spawn_pos: Vec2<f32>,
+    end_rect: Rectangle,
+    win: bool,
 }
 
 impl World {
@@ -55,14 +57,18 @@ impl World {
             dark_tilemap,
             light_tilemap,
             spawn_pos,
+            end_pos,
             ..
         } = level;
+        let tile_size = dark_tilemap.tile_size();
         World {
             player: Player::new(spawn_pos),
             dark_tilemap,
             light_tilemap,
             mode: WorldMode::Dark,
             spawn_pos,
+            end_rect: Rectangle::new(end_pos.x, end_pos.y, tile_size.x, tile_size.y),
+            win: false,
         }
     }
 
@@ -81,6 +87,11 @@ impl World {
 
     pub fn update(&mut self, ctx: &mut tetra::Context) {
         self.player.update(ctx);
+
+        if self.player.get_hbox().intersects(&self.end_rect) {
+            // win!!
+            self.win = true;
+        }
 
         let tilemap = match self.mode {
             WorldMode::Dark => &self.dark_tilemap,
@@ -156,8 +167,15 @@ impl World {
                     },
                 )),
         );
+        assets
+            .door
+            .draw(ctx, DrawParams::new().position(self.end_rect.top_left()));
         self.dark_tilemap.render_tilemap(ctx, assets, Color::RED);
         self.light_tilemap.render_tilemap(ctx, assets, Color::BLUE);
         graphics::reset_blend_state(ctx);
+    }
+
+    pub fn win(&self) -> bool {
+        self.win
     }
 }

@@ -78,6 +78,7 @@ impl EditorScene {
             light_tilemap: Tilemap::new(Self::DEFAULT_TILEMAP_SIZE, Self::DEFAULT_TILE_SIZE),
             palette: Palette::default(),
             spawn_pos: Vec2::zero(),
+            end_pos: Vec2::zero(),
         }
     }
 
@@ -173,6 +174,10 @@ impl EditorScene {
         if !shift && !ctrl && input::is_mouse_button_down(ctx, input::MouseButton::Middle) {
             self.level.spawn_pos = tilemap.snap(self.mouse_pos);
         }
+
+        if !shift && ctrl && input::is_mouse_button_down(ctx, input::MouseButton::Middle) {
+            self.level.end_pos = tilemap.snap(self.mouse_pos);
+        }
     }
 
     fn new_level(&mut self) {
@@ -183,9 +188,9 @@ impl EditorScene {
     fn save_level(&mut self) {
         match &self.level_path {
             Some(p) => match self.level.save(&p) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => println!("Error saving level at {}: {:?}", p.display(), e),
-            }
+            },
             None => self.save_level_as(),
         }
     }
@@ -196,7 +201,7 @@ impl EditorScene {
             .save_file();
         if let Some(p) = &self.level_path {
             match self.level.save(&p) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => println!("Error saving level at {}: {:?}", p.display(), e),
             }
         }
@@ -404,9 +409,8 @@ impl Scene for EditorScene {
         self.level
             .light_tilemap
             .render_tilemap(ctx, assets, Color::BLACK.with_alpha(light_alpha));
-        assets
-            .player
-            .draw(ctx, DrawParams::new().position(self.level.spawn_pos));
+        assets.player.draw(ctx, self.level.spawn_pos);
+        assets.door.draw(ctx, self.level.end_pos);
         if self
             .level
             .dark_tilemap

@@ -48,6 +48,10 @@ pub struct World {
     mode: WorldMode,
     spawn_pos: Vec2<f32>,
     end_rect: Rectangle,
+    dark_keys: Vec<(usize, usize)>,
+    light_keys: Vec<(usize, usize)>,
+    keys_amount: usize,
+    got_keys: usize,
     win: bool,
 }
 
@@ -61,6 +65,7 @@ impl World {
             ..
         } = level;
         let tile_size = dark_tilemap.tile_size();
+        let keys_amount = dark_tilemap.keys_amount() + light_tilemap.keys_amount();
         World {
             player: Player::new(spawn_pos),
             dark_tilemap,
@@ -69,12 +74,24 @@ impl World {
             spawn_pos,
             end_rect: Rectangle::new(end_pos.x, end_pos.y, tile_size.x, tile_size.y),
             win: false,
+            dark_keys: Vec::new(),
+            light_keys: Vec::new(),
+            keys_amount,
+            got_keys: 0,
         }
     }
 
     pub fn reset(&mut self) {
+        self.win = false;
         self.player = Player::new(self.spawn_pos);
         self.mode = WorldMode::Dark;
+        for pos in &self.dark_keys {
+            self.dark_tilemap.set_tile_usize(*pos, Tile::Key);
+        }
+        for pos in &self.light_keys {
+            self.light_tilemap.set_tile_usize(*pos, Tile::Key);
+        }
+        self.got_keys = 0;
     }
 
     pub fn player_pos(&self) -> Vec2<f32> {
@@ -91,19 +108,14 @@ impl World {
         }
         self.player.update(ctx);
 
-        if self.player.get_hbox().intersects(&self.end_rect) {
-            // win!!
-            self.win = true;
-            return;
-        }
-
-        let tilemap = match self.mode {
-            WorldMode::Dark => &self.dark_tilemap,
-            WorldMode::Light => &self.light_tilemap,
+        let (tilemap, keys) = match self.mode {
+            WorldMode::Dark => (&mut self.dark_tilemap, &mut self.dark_keys),
+            WorldMode::Light => (&mut self.light_tilemap, &mut self.light_keys),
         };
 
         let neighbors = tilemap.get_neigbor_tile_hboxes(self.player.get_hbox().center());
         let mut spikes = vec![];
+        let mut collected_keys = vec![];
         for (tile, rect) in &neighbors {
             match tile {
                 Tile::None => continue,
@@ -120,12 +132,28 @@ impl World {
                         self.player.on_world_change(self.mode);
                     }
                 }
+                Tile::Key => {
+                    collected_keys.push(rect);
+                }
             }
         }
 
         self.player.post_update();
 
         let player_rect = self.player.get_hbox();
+        if self.got_keys == self.keys_amount && player_rect.intersects(&self.end_rect) {
+            self.win = true;
+            return;
+        }
+        collected_keys.into_iter().for_each(|k| {
+            if player_rect.intersects(k) {
+                let coords = k.top_left() / tilemap.tile_size();
+                let coords = (coords.x as usize, coords.y as usize);
+                keys.push(coords);
+                tilemap.set_tile_usize(coords, Tile::None);
+                self.got_keys += 1;
+            }
+        });
         if spikes.into_iter().any(|s| s.intersects(&player_rect)) {
             self.reset();
             return;
@@ -171,9 +199,12 @@ impl World {
                     },
                 )),
         );
-        assets
-            .door
-            .draw(ctx, DrawParams::new().position(self.end_rect.top_left()));
+        let door = if self.got_keys == self.keys_amount {
+            &assets.door
+        } else {
+            &assets.door_locked
+        };
+        door.draw(ctx, DrawParams::new().position(self.end_rect.top_left()));
         self.dark_tilemap.render_tilemap(ctx, assets, Color::RED);
         self.light_tilemap.render_tilemap(ctx, assets, Color::BLUE);
         graphics::reset_blend_state(ctx);

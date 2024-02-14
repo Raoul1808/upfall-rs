@@ -23,6 +23,7 @@ pub enum Tile {
     Solid,
     Spike(Facing),
     Portal(Axis),
+    Key,
 }
 
 impl Tile {
@@ -32,6 +33,7 @@ impl Tile {
             Tile::Solid => "Solid",
             Tile::Spike(_) => "Spike",
             Tile::Portal(_) => "Portal",
+            Tile::Key => "Key",
         }
     }
 }
@@ -87,6 +89,7 @@ impl Tile {
                     size.y * SPIKE_LENGTH,
                 ),
             },
+            Tile::Key => Rectangle::new(pos.x + 4., pos.y + 4., size.x - 8., size.y - 8.),
         }
     }
 
@@ -137,6 +140,10 @@ impl Tilemap {
             self.tilemap_size.x as f32 * self.tile_width(),
             self.tilemap_size.y as f32 * self.tile_height(),
         )
+    }
+
+    pub fn keys_amount(&self) -> usize {
+        self.tiles.iter().filter(|t| matches!(t, Tile::Key)).count()
     }
 
     fn pos_to_index(&self, pos: (usize, usize)) -> usize {
@@ -229,6 +236,12 @@ impl Tilemap {
                         .origin(offset)
                         .color(color),
                 );
+            }
+            Tile::Key => {
+                let pos = Vec2::new(x as f32, y as f32) * self.tile_size;
+                assets
+                    .key
+                    .draw(ctx, DrawParams::new().position(pos).color(color));
             }
         });
     }

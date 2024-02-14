@@ -20,6 +20,8 @@ pub struct Assets {
     spike: Texture,
     tile: Texture,
     door: Texture,
+    door_locked: Texture,
+    key: Texture,
 }
 
 impl Assets {
@@ -37,6 +39,8 @@ impl Assets {
             spike: Texture::new(ctx, "res/sprites/spike.png")?,
             tile: Texture::new(ctx, "res/sprites/tile.png")?,
             door: Texture::new(ctx, "res/sprites/door.png")?,
+            door_locked: Texture::new(ctx, "res/sprites/door_locked.png")?,
+            key: Texture::new(ctx, "res/sprites/key.png")?,
         })
     }
 }

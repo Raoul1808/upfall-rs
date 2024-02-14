@@ -53,8 +53,13 @@ pub struct LevelPack {
 impl LevelPack {
     pub fn from_directory<P: AsRef<Path>>(path: P) -> Result<LevelPack, LevelError> {
         let mut levels = vec![];
-        for entry in fs::read_dir(path.as_ref()).map_err(LevelError::Io)? {
-            let entry = entry.map_err(LevelError::Io)?;
+        let entries: std::io::Result<Vec<fs::DirEntry>> = fs::read_dir(path.as_ref())
+            .map_err(LevelError::Io)?
+            .into_iter()
+            .collect();
+        let mut entries = entries.map_err(LevelError::Io)?;
+        entries.sort_by_key(|e| e.path());
+        for entry in &entries {
             let ft = entry.file_type().map_err(LevelError::Io)?;
             if ft.is_file() {
                 let path = entry.path();

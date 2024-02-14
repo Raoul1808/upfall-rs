@@ -15,8 +15,7 @@ impl HsvColor {
 fn max_f32(x: f32, y: f32) -> f32 {
     if x > y {
         x
-    }
-    else {
+    } else {
         y
     }
 }
@@ -24,8 +23,7 @@ fn max_f32(x: f32, y: f32) -> f32 {
 fn min_f32(x: f32, y: f32) -> f32 {
     if x < y {
         x
-    }
-    else {
+    } else {
         y
     }
 }
@@ -41,25 +39,20 @@ impl From<Color> for HsvColor {
         let h = {
             if d == 0. {
                 0.
-            }
-            else if c_max == r {
+            } else if c_max == r {
                 60. * (((g - b) / d) % 6.)
-            }
-            else if c_max == g {
+            } else if c_max == g {
                 60. * (((b - r) / d) + 2.)
-            }
-            else if c_max == b {
+            } else if c_max == b {
                 60. * (((r - g) / d) + 4.)
-            }
-            else {
+            } else {
                 0.
             }
         };
         let s = {
             if c_max == 0. {
                 0.
-            }
-            else {
+            } else {
                 d / c_max
             }
         };
@@ -68,11 +61,11 @@ impl From<Color> for HsvColor {
     }
 }
 
-impl Into<Color> for HsvColor {
-    fn into(self) -> Color {
-        let h = self.h * 360.;
-        let s = self.s;
-        let v = self.v;
+impl From<HsvColor> for Color {
+    fn from(val: HsvColor) -> Self {
+        let h = val.h * 360.;
+        let s = val.s;
+        let v = val.v;
 
         let c = v * s;
         let x = c * (1. - ((h / 60.) % 2. - 1.).abs());

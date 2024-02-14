@@ -1,8 +1,13 @@
-use std::{fs, io, path::Path};
+use std::{
+    fs::{self, File},
+    io::{self, BufReader, Read},
+    path::Path,
+};
 
 use bincode::Options;
 use serde::{Deserialize, Serialize};
 use tetra::math::Vec2;
+use zip::ZipArchive;
 
 use crate::{palette::Palette, tilemap::Tilemap};
 
@@ -22,15 +27,20 @@ pub enum LevelError {
     Io(io::Error),
     Serialization(Box<bincode::ErrorKind>),
     Deserialization(Box<bincode::ErrorKind>),
+    Zip(zip::result::ZipError),
 }
 
 impl Level {
     pub fn load_file<P: AsRef<Path>>(path: P) -> Result<Level, LevelError> {
         let bytes = fs::read(path).map_err(LevelError::Io)?;
+        Self::load_bytes(&bytes)
+    }
+
+    pub fn load_bytes(bytes: &[u8]) -> Result<Level, LevelError> {
         bincode::options()
             .with_varint_encoding()
             .with_big_endian()
-            .deserialize(&bytes)
+            .deserialize(bytes)
             .map_err(LevelError::Deserialization)
     }
 
@@ -80,13 +90,69 @@ impl LevelPack {
         })
     }
 
+    pub fn from_zip_file<P: AsRef<Path>>(path: P) -> Result<LevelPack, LevelError> {
+        let f = File::open(&path).map_err(LevelError::Io)?;
+        let reader = BufReader::new(f);
+        let mut zip = ZipArchive::new(reader).map_err(LevelError::Zip)?;
+        let mut files = vec![];
+        for i in 0..zip.len() {
+            let mut file = zip.by_index(i).map_err(LevelError::Zip)?;
+            let path = {
+                match file.enclosed_name() {
+                    Some(p) => (*p).to_path_buf(),
+                    None => continue,
+                }
+            };
+            if path.extension().is_some_and(|e| e == "umdx") {
+                let mut buf = vec![];
+                let _ = file.read_to_end(&mut buf).map_err(LevelError::Io)?;
+                let bytes = buf.clone();
+                files.push((path.to_path_buf(), bytes));
+            }
+        }
+        files.sort_by(|a, b| a.0.cmp(&b.0));
+        let mut levels = vec![];
+        for (_, bytes) in files {
+            let level = Level::load_bytes(&bytes)?;
+            levels.push(level);
+        }
+        let name = path
+            .as_ref()
+            .file_stem()
+            .map(|f| f.to_string_lossy().to_string())
+            .unwrap_or("Unnamed Pack".into());
+        Ok(LevelPack { name, levels })
+    }
+
     pub fn get_packs_in_directory<P: AsRef<Path>>(path: P) -> std::io::Result<Vec<LevelPack>> {
         let mut packs = Vec::new();
         for entry in fs::read_dir(path)? {
             let entry = entry?;
             if entry.file_type()?.is_dir() {
                 if let Ok(p) = LevelPack::from_directory(entry.path()) {
-                    packs.push(p);
+                    if !p.levels.is_empty() {
+                        println!(
+                            "Loaded pack {} from directory {} with {} levels",
+                            p.name,
+                            entry.path().display(),
+                            p.levels.len()
+                        );
+                        packs.push(p);
+                    }
+                }
+            }
+            if entry.file_type()?.is_file() && entry.path().extension().is_some_and(|e| e == "zip")
+            {
+                if let Ok(p) = LevelPack::from_zip_file(entry.path()) {
+                    if !p.levels.is_empty() {
+                        println!(
+                            "Loaded pack {} from file {} with {} levels",
+                            p.name,
+                            entry.path().display(),
+                            p.levels.len()
+                        );
+                        packs.push(p);
+                    }
                 }
             }
         }

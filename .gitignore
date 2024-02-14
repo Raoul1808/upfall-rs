@@ -26,3 +26,4 @@ Cargo.lock
 # Upfall and Upfall-rs levels
 *.umd
 *.umdx
+levels/*.zip

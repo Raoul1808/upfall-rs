@@ -199,11 +199,13 @@ impl EditorScene {
     }
 
     fn save_level_as(&mut self) {
-        self.level_path = rfd::FileDialog::new()
+        let path = rfd::FileDialog::new()
             .add_filter("Upfall-RS Map Data", &["umdx"])
             .save_file();
-        if let Some(p) = &self.level_path {
-            match self.level.save_file(p) {
+        if let Some(mut p) = path {
+            p.set_extension("umdx");
+            self.level_path = Some(p.clone());
+            match self.level.save_file(&p) {
                 Ok(_) => {}
                 Err(e) => println!("Error saving level at {}: {:?}", p.display(), e),
             }

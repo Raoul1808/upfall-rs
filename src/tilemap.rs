@@ -212,7 +212,7 @@ impl Tilemap {
     pub fn render_tilemap(&self, ctx: &mut tetra::Context, assets: &Assets, color: Color) {
         self.run_for_each_tile(|(x, y), tile| match tile {
             Tile::None => {}
-            Tile::Solid | Tile::Portal(_) => {
+            Tile::Solid => {
                 let pos = Vec2::new(x as f32, y as f32) * self.tile_size;
                 assets
                     .tile
@@ -236,6 +236,23 @@ impl Tilemap {
                         .origin(offset)
                         .color(color),
                 );
+            }
+            Tile::Portal(axis) => {
+                use std::f32::consts::PI;
+                let rot = match axis {
+                    Axis::Horizontal => 0.,
+                    Axis::Vertical => PI / 2.,
+                };
+                let offset = self.tile_size() / 2.;
+                let pos = Vec2::new(x as f32, y as f32) * self.tile_size() + offset;
+                assets.portal.draw(
+                    ctx,
+                    DrawParams::new()
+                        .position(pos)
+                        .rotation(rot)
+                        .origin(offset)
+                        .color(color),
+                )
             }
             Tile::Key => {
                 let pos = Vec2::new(x as f32, y as f32) * self.tile_size;

@@ -32,25 +32,15 @@ pub struct GameScene {
 impl GameScene {
     const INNER_SIZE: Vec2<i32> = Vec2::new(640, 360);
     pub fn new(ctx: &mut tetra::Context, level: Level) -> tetra::Result<GameScene> {
-        let palette = level.palette;
-        let level_pack = LevelPack {
-            levels: vec![level.clone()],
-            ..Default::default()
-        };
-        Ok(GameScene {
-            world: World::new(level),
-            camera: Camera::new(Self::INNER_SIZE.x as f32, Self::INNER_SIZE.y as f32),
-            scaler: ScreenScaler::with_window_size(
-                ctx,
-                Self::INNER_SIZE.x,
-                Self::INNER_SIZE.y,
-                ScalingMode::ShowAll,
-            )?,
-            palette_system: PaletteSystem::new(palette),
-            level_pack,
-            current_level: 0,
-            playtest: true,
-        })
+        let mut scene = GameScene::with_pack(
+            ctx,
+            LevelPack {
+                levels: vec![level],
+                ..Default::default()
+            },
+        )?;
+        scene.playtest = false;
+        Ok(scene)
     }
 
     pub fn with_pack(ctx: &mut tetra::Context, pack: LevelPack) -> tetra::Result<GameScene> {

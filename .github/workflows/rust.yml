@@ -1,4 +1,4 @@
-name: Rust
+name: Build Release
 
 on: workflow_dispatch
 
@@ -23,9 +23,28 @@ jobs:
     - name: Package
       run: |
         copy target/release/upfall-rs.exe .
-        Compress-Archive -Path upfall-rs.exe, SDL2.dll, res -DestinationPath win-x64.zip
+        Compress-Archive -Path upfall-rs.exe, SDL2.dll, res, levels -DestinationPath win-x64.zip
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
         name: win-x64.zip
         path: ${{ github.workspace }}/win-x64.zip
+
+  build-linux:
+    runs-on: ubuntu-20.04   # GLIBC compatibility stuff
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: cargo build --verbose --release
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Package
+      run: |
+        cp target/release/upfall-rs .
+        tar -czvf linux-x64.tar.gz upfall-rs res levels
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: linux-x64.tar.gz
+        path: ${{ github.workspace }}/linux-x64.tar.gz

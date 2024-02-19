@@ -1,7 +1,7 @@
 use egui_tetra::egui::CtxRef;
 use scenes::{Scene, StartScene, Transition};
 use tetra::{
-    graphics::{self, Color, Shader, Texture},
+    graphics::{self, text::Font, Color, Shader, Texture},
     window, ContextBuilder,
 };
 
@@ -23,6 +23,8 @@ pub struct Assets {
     door_locked: Texture,
     key: Texture,
     portal: Texture,
+    pixel_font: (f32, Font),
+    pixel_font_small: (f32, Font),
 }
 
 impl Assets {
@@ -43,6 +45,8 @@ impl Assets {
             door_locked: Texture::new(ctx, "res/sprites/door_locked.png")?,
             key: Texture::new(ctx, "res/sprites/key.png")?,
             portal: Texture::new(ctx, "res/sprites/portal.png")?,
+            pixel_font: (48., Font::vector(ctx, "res/font/TinyUnicode.ttf", 52.)?),
+            pixel_font_small: (36., Font::vector(ctx, "res/font/TinyUnicode.ttf", 32.)?),
         })
     }
 }

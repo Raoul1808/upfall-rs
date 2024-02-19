@@ -12,7 +12,7 @@ impl HsvColor {
     }
 }
 
-fn max_f32(x: f32, y: f32) -> f32 {
+pub fn max_f32(x: f32, y: f32) -> f32 {
     if x > y {
         x
     } else {
@@ -20,7 +20,7 @@ fn max_f32(x: f32, y: f32) -> f32 {
     }
 }
 
-fn min_f32(x: f32, y: f32) -> f32 {
+pub fn min_f32(x: f32, y: f32) -> f32 {
     if x < y {
         x
     } else {

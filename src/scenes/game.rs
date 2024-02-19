@@ -3,21 +3,150 @@ use tetra::{
     graphics::{
         self,
         scaling::{ScalingMode, ScreenScaler},
-        Camera, Color,
+        text::Text,
+        Camera, Color, DrawParams, Rectangle,
     },
     input::{self, Key},
     math::Vec2,
-    Event,
+    window, Event,
 };
 
 use crate::{
     level::{Level, LevelPack},
     palette::PaletteSystem,
+    util::min_f32,
     world::World,
     Assets, Scene,
 };
 
 use super::Transition;
+
+#[derive(Default)]
+struct LevelLabel {
+    name: String,
+    author: String,
+    name_text: Option<Text>,
+    author_text: Option<Text>,
+    name_offset: Vec2<f32>,
+    author_offset: Vec2<f32>,
+    name_position: Vec2<f32>,
+    author_position: Vec2<f32>,
+    text_timer: f32,
+    dirty_offset: bool,
+    new_text: bool,
+    screen_size: (i32, i32),
+    back_rect: Rectangle,
+}
+
+impl LevelLabel {
+    const TEXT_SHOW_TIME: f32 = 3.;
+    const BACK_RECT_PADDING: f32 = 10.;
+
+    pub fn new(ctx: &mut tetra::Context, name: &str, author: &str) -> Self {
+        let mut label = Self::default();
+        label.update_screen_size(ctx);
+        label.set(name, author);
+        label
+    }
+
+    pub fn set(&mut self, name: &str, author: &str) {
+        self.name = name.into();
+        self.author = format!("Created by {}", author);
+        self.text_timer = 0.;
+        self.dirty_offset = true;
+        self.new_text = true;
+    }
+
+    pub fn update_screen_size(&mut self, ctx: &mut tetra::Context) {
+        let size = window::get_size(ctx);
+        if self.screen_size != size {
+            self.screen_size = size;
+            self.dirty_offset = true;
+        }
+    }
+
+    fn update_offsets(&mut self, ctx: &mut tetra::Context) {
+        // Lots of unwrapping. This is bad practice, but I don't really have another choice
+        let name = self.name_text.as_mut().unwrap();
+        let author = self.author_text.as_mut().unwrap();
+        let name_bounds = name.get_bounds(ctx).unwrap();
+        let author_bounds = author.get_bounds(ctx).unwrap();
+        self.name_offset = Vec2::new(name_bounds.center().x, name_bounds.bottom());
+        self.author_offset = Vec2::new(author_bounds.center().x, author_bounds.bottom());
+        self.name_position = Vec2::new(
+            self.screen_size.0 as f32 / 2.,
+            self.screen_size.1 as f32 - 50.,
+        );
+        self.author_position = Vec2::new(
+            self.screen_size.0 as f32 / 2.,
+            self.screen_size.1 as f32 - 25.,
+        );
+        let mut back_rect = name_bounds.combine(&author_bounds);
+        let min_x = min_f32(
+            self.name_position.x - name_bounds.width / 2.,
+            self.author_position.x - author_bounds.width / 2.,
+        );
+        let min_y = min_f32(
+            self.name_position.y - name_bounds.height,
+            self.author_position.y - author_bounds.height,
+        );
+        back_rect.x = min_x - Self::BACK_RECT_PADDING;
+        back_rect.y = min_y - Self::BACK_RECT_PADDING;
+        back_rect.width += Self::BACK_RECT_PADDING * 2.;
+        back_rect.height += Self::BACK_RECT_PADDING * 2.;
+        self.back_rect = back_rect;
+    }
+
+    pub fn update_timer(&mut self, dt: f32) {
+        self.text_timer += dt;
+    }
+
+    pub fn draw(
+        &mut self,
+        ctx: &mut tetra::Context,
+        assets: &Assets,
+        dark_color: &Color,
+        light_color: &Color,
+    ) {
+        if self.new_text {
+            let mut name = Text::new(&self.name, assets.pixel_font.1.clone());
+            let mut author = Text::new(&self.author, assets.pixel_font_small.1.clone());
+            name.get_bounds(ctx);
+            author.get_bounds(ctx);
+            self.name_text = Some(name);
+            self.author_text = Some(author);
+            self.new_text = false;
+        }
+        if self.dirty_offset {
+            self.update_offsets(ctx);
+            self.dirty_offset = false;
+        }
+        if self.text_timer >= Self::TEXT_SHOW_TIME {
+            return;
+        }
+        assets.pixel.draw(
+            ctx,
+            DrawParams::new()
+                .position(self.back_rect.top_left())
+                .scale(self.back_rect.bottom_right() - self.back_rect.top_left())
+                .color(*dark_color),
+        );
+        self.name_text.as_mut().unwrap().draw(
+            ctx,
+            DrawParams::new()
+                .position(self.name_position)
+                .origin(Vec2::new(self.name_offset.x, assets.pixel_font.0))
+                .color(*light_color),
+        );
+        self.author_text.as_mut().unwrap().draw(
+            ctx,
+            DrawParams::new()
+                .position(self.author_position)
+                .origin(Vec2::new(self.author_offset.x, assets.pixel_font_small.0))
+                .color(*light_color),
+        );
+    }
+}
 
 pub struct GameScene {
     world: World,
@@ -27,6 +156,7 @@ pub struct GameScene {
     level_pack: LevelPack,
     current_level: usize,
     playtest: bool,
+    label: LevelLabel,
 }
 
 impl GameScene {
@@ -46,6 +176,7 @@ impl GameScene {
     pub fn with_pack(ctx: &mut tetra::Context, pack: LevelPack) -> tetra::Result<GameScene> {
         let first_level = &pack.levels[0];
         let palette = first_level.palette;
+        let label = LevelLabel::new(ctx, &first_level.name, &first_level.author);
         Ok(GameScene {
             world: World::new(first_level.clone()),
             camera: Camera::new(Self::INNER_SIZE.x as f32, Self::INNER_SIZE.y as f32),
@@ -59,14 +190,16 @@ impl GameScene {
             level_pack: pack,
             current_level: 0,
             playtest: false,
+            label,
         })
     }
 }
 
 impl Scene for GameScene {
-    fn event(&mut self, _ctx: &mut tetra::Context, event: tetra::Event) -> tetra::Result {
+    fn event(&mut self, ctx: &mut tetra::Context, event: tetra::Event) -> tetra::Result {
         if let Event::Resized { width, height } = event {
             self.scaler.set_outer_size(width, height);
+            self.label.update_screen_size(ctx);
         }
         Ok(())
     }
@@ -83,6 +216,7 @@ impl Scene for GameScene {
         let dt = tetra::time::get_delta_time(ctx).as_secs_f32();
 
         self.world.update(ctx);
+        self.label.update_timer(dt);
         if self.world.win() {
             match self.playtest {
                 true => {
@@ -95,6 +229,7 @@ impl Scene for GameScene {
                     }
                     let next_level = self.level_pack.levels[self.current_level].clone();
                     self.palette_system.change_palette(next_level.palette);
+                    self.label.set(&next_level.name, &next_level.author);
                     self.world = World::new(next_level);
                 }
             }
@@ -151,6 +286,14 @@ impl Scene for GameScene {
         graphics::set_shader(ctx, &assets.shader);
         self.scaler.draw(ctx);
         graphics::reset_shader(ctx);
+        if !self.playtest {
+            self.label.draw(
+                ctx,
+                assets,
+                self.palette_system.dark(),
+                self.palette_system.light(),
+            );
+        }
         Ok(())
     }
 }

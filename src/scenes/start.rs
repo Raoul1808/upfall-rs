@@ -10,6 +10,7 @@ pub struct StartScene {
     quit: bool,
     play: bool,
     play_pack: bool,
+    manage_packs: bool,
     packs: Vec<LevelPack>,
     selected_pack: usize,
 }
@@ -21,6 +22,7 @@ impl StartScene {
             quit: false,
             play: false,
             play_pack: false,
+            manage_packs: false,
             packs: Vec::new(),
             selected_pack: 0,
         }
@@ -70,6 +72,10 @@ impl Scene for StartScene {
                 self.play = true;
                 self.refresh_packs();
             }
+            if ui.button("Packs").clicked() {
+                self.manage_packs = true;
+                self.refresh_packs();
+            }
             if ui.button("Editor").clicked() {
                 self.editor = true;
             }
@@ -87,11 +93,48 @@ impl Scene for StartScene {
                         ui,
                         &mut self.selected_pack,
                         self.packs.len(),
-                        |i| self.packs[i].name.to_owned(),
+                        |i| {
+                            format!(
+                                "[{}] {}",
+                                if self.packs[i].is_zip { "ZIP" } else { "DIR" },
+                                self.packs[i].name
+                            )
+                        },
                     );
                 }
                 if ui.button("Play pack").clicked() {
                     self.play_pack = true;
+                }
+            });
+        egui::Window::new("Manage Packs")
+            .open(&mut self.manage_packs)
+            .show(egui_ctx, |ui| {
+                if self.packs.is_empty() {
+                    ui.label("No packs detected :(");
+                } else {
+                    egui::ComboBox::from_label("Pack").show_index(
+                        ui,
+                        &mut self.selected_pack,
+                        self.packs.len(),
+                        |i| {
+                            format!(
+                                "[{}] {}",
+                                if self.packs[i].is_zip { "ZIP" } else { "DIR" },
+                                self.packs[i].name
+                            )
+                        },
+                    );
+                    let current_pack = &self.packs[self.selected_pack];
+                    if ui
+                        .add_enabled(!current_pack.is_zip, egui::Button::new("Zip up"))
+                        .clicked()
+                    {
+                        let res = LevelPack::make_zip_from_dir(&current_pack.location);
+                        match res {
+                            Ok(p) => self.packs.push(p),
+                            Err(e) => println!("{:#?}", e),
+                        }
+                    }
                 }
             });
         Ok(())

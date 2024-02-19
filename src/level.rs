@@ -1,13 +1,13 @@
 use std::{
     fs::{self, File},
-    io::{self, BufReader, Read},
-    path::Path,
+    io::{self, BufReader, Read, Write},
+    path::{Path, PathBuf},
 };
 
 use bincode::Options;
 use serde::{Deserialize, Serialize};
 use tetra::math::Vec2;
-use zip::ZipArchive;
+use zip::{write::FileOptions, ZipArchive, ZipWriter};
 
 use crate::{palette::Palette, tilemap::Tilemap};
 
@@ -58,6 +58,8 @@ impl Level {
 pub struct LevelPack {
     pub name: String,
     pub levels: Vec<Level>,
+    pub location: PathBuf,
+    pub is_zip: bool,
 }
 
 impl LevelPack {
@@ -87,6 +89,8 @@ impl LevelPack {
                 .file_name()
                 .map(|s| s.to_string_lossy().to_string())
                 .unwrap_or("Unnamed Pack".into()),
+            location: path.as_ref().to_path_buf(),
+            is_zip: false,
         })
     }
 
@@ -121,7 +125,12 @@ impl LevelPack {
             .file_stem()
             .map(|f| f.to_string_lossy().to_string())
             .unwrap_or("Unnamed Pack".into());
-        Ok(LevelPack { name, levels })
+        Ok(LevelPack {
+            name,
+            levels,
+            location: path.as_ref().to_path_buf(),
+            is_zip: true,
+        })
     }
 
     pub fn get_packs_in_directory<P: AsRef<Path>>(path: P) -> std::io::Result<Vec<LevelPack>> {
@@ -157,5 +166,37 @@ impl LevelPack {
             }
         }
         Ok(packs)
+    }
+
+    pub fn make_zip_from_dir<P: AsRef<Path>>(dir: P) -> Result<LevelPack, LevelError> {
+        assert!(!dir.as_ref().is_file());
+        let files: Vec<PathBuf> = fs::read_dir(&dir)
+            .map_err(LevelError::Io)?
+            .filter_map(Result::ok)
+            .map(|f| f.path())
+            .collect();
+        dbg!(&files);
+        let zip_path = dir.as_ref().with_extension("zip");
+        dbg!(&zip_path);
+        {
+            let file = File::create(&zip_path).map_err(LevelError::Io)?;
+            let mut writer = ZipWriter::new(file);
+            for file in &files {
+                let filename = file.file_name().unwrap();
+                writer
+                    .start_file(
+                        filename.to_string_lossy().to_string(),
+                        FileOptions::default(),
+                    )
+                    .map_err(LevelError::Zip)?;
+                let file_bytes = fs::read(file).map_err(LevelError::Io)?;
+                writer.write_all(&file_bytes).map_err(LevelError::Io)?;
+            }
+            writer.finish().map_err(LevelError::Zip)?;
+            drop(writer);
+        }
+        // Load back the pack to make sure the process worked
+        let pack = LevelPack::from_zip_file(zip_path)?;
+        Ok(pack)
     }
 }

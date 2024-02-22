@@ -4,7 +4,7 @@ use tetra::{
         self,
         scaling::{ScalingMode, ScreenScaler},
         text::Text,
-        Camera, Color, DrawParams, Rectangle,
+        Camera, Color, DrawParams,
     },
     input::{self, Key},
     math::Vec2,
@@ -14,7 +14,6 @@ use tetra::{
 use crate::{
     level::{Level, LevelPack},
     palette::PaletteSystem,
-    util::min_f32,
     world::World,
     Assets, Scene,
 };
@@ -35,12 +34,11 @@ struct LevelLabel {
     dirty_offset: bool,
     new_text: bool,
     screen_size: (i32, i32),
-    back_rect: Rectangle,
 }
 
 impl LevelLabel {
     const TEXT_SHOW_TIME: f32 = 3.;
-    const BACK_RECT_PADDING: f32 = 10.;
+    const STROKE_WIDTH: f32 = 2.;
 
     pub fn new(ctx: &mut tetra::Context, name: &str, author: &str) -> Self {
         let mut label = Self::default();
@@ -81,24 +79,42 @@ impl LevelLabel {
             self.screen_size.0 as f32 / 2.,
             self.screen_size.1 as f32 - 25.,
         );
-        let mut back_rect = name_bounds.combine(&author_bounds);
-        let min_x = min_f32(
-            self.name_position.x - name_bounds.width / 2.,
-            self.author_position.x - author_bounds.width / 2.,
-        );
-        let min_y = min_f32(
-            self.name_position.y - name_bounds.height,
-            self.author_position.y - author_bounds.height,
-        );
-        back_rect.x = min_x - Self::BACK_RECT_PADDING;
-        back_rect.y = min_y - Self::BACK_RECT_PADDING;
-        back_rect.width += Self::BACK_RECT_PADDING * 2.;
-        back_rect.height += Self::BACK_RECT_PADDING * 2.;
-        self.back_rect = back_rect;
     }
 
     pub fn update_timer(&mut self, dt: f32) {
         self.text_timer += dt;
+    }
+
+    fn draw_text(
+        ctx: &mut tetra::Context,
+        text: &mut Text,
+        position: Vec2<f32>,
+        origin: Vec2<f32>,
+        stroke: f32,
+        text_color: Color,
+        stroke_color: Color,
+    ) {
+        for i in 0..9 {
+            let x = (i % 3) - 1;
+            let y = (i / 3) - 1;
+            if x == 0 && y == 0 {
+                continue;
+            }
+            text.draw(
+                ctx,
+                DrawParams::new()
+                    .position(position - Vec2::new(x as f32 * stroke, y as f32 * stroke))
+                    .origin(origin)
+                    .color(stroke_color),
+            );
+        }
+        text.draw(
+            ctx,
+            DrawParams::new()
+                .position(position)
+                .origin(origin)
+                .color(text_color),
+        );
     }
 
     pub fn draw(
@@ -124,26 +140,23 @@ impl LevelLabel {
         if self.text_timer >= Self::TEXT_SHOW_TIME {
             return;
         }
-        assets.pixel.draw(
+        Self::draw_text(
             ctx,
-            DrawParams::new()
-                .position(self.back_rect.top_left())
-                .scale(self.back_rect.bottom_right() - self.back_rect.top_left())
-                .color(*dark_color),
+            self.name_text.as_mut().unwrap(),
+            self.name_position,
+            self.name_offset,
+            Self::STROKE_WIDTH,
+            *light_color,
+            *dark_color,
         );
-        self.name_text.as_mut().unwrap().draw(
+        Self::draw_text(
             ctx,
-            DrawParams::new()
-                .position(self.name_position)
-                .origin(Vec2::new(self.name_offset.x, assets.pixel_font.0))
-                .color(*light_color),
-        );
-        self.author_text.as_mut().unwrap().draw(
-            ctx,
-            DrawParams::new()
-                .position(self.author_position)
-                .origin(Vec2::new(self.author_offset.x, assets.pixel_font_small.0))
-                .color(*light_color),
+            self.author_text.as_mut().unwrap(),
+            self.author_position,
+            self.author_offset,
+            Self::STROKE_WIDTH,
+            *light_color,
+            *dark_color,
         );
     }
 }

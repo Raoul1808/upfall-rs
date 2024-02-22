@@ -24,6 +24,7 @@ pub enum Tile {
     Spike(Facing),
     Portal(Axis),
     Key,
+    Spring(Facing),
 }
 
 impl Tile {
@@ -34,6 +35,7 @@ impl Tile {
             Tile::Spike(_) => "Spike",
             Tile::Portal(_) => "Portal",
             Tile::Key => "Key",
+            Tile::Spring(_) => "Spring",
         }
     }
 }
@@ -63,7 +65,7 @@ impl Tile {
         match *self {
             Tile::None => Rectangle::default(),
             Tile::Solid | Tile::Portal(_) => Rectangle::new(pos.x, pos.y, size.x, size.y),
-            Tile::Spike(dir) => match dir {
+            Tile::Spike(dir) | Tile::Spring(dir) => match dir {
                 Facing::Up => Rectangle::new(
                     pos.x + size.x * SPIKE_SIDE_GAP,
                     pos.y + size.y * SPIKE_FRONT_GAP,
@@ -259,6 +261,19 @@ impl Tilemap {
                 assets
                     .key
                     .draw(ctx, DrawParams::new().position(pos).color(color));
+            }
+            Tile::Spring(_) => {
+                let rect = tile.hbox(
+                    Vec2::new(x as f32 * self.tile_width(), y as f32 * self.tile_height()),
+                    self.tile_size(),
+                );
+                assets.pixel.draw(
+                    ctx,
+                    DrawParams::new()
+                        .position(rect.top_left())
+                        .scale(rect.bottom_right() - rect.top_left())
+                        .color(color),
+                );
             }
         });
     }

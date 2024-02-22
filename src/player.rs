@@ -4,7 +4,10 @@ use tetra::{
     math::Vec2,
 };
 
-use crate::{tilemap::Axis, world::WorldMode};
+use crate::{
+    tilemap::{Axis, Facing},
+    world::WorldMode,
+};
 
 #[derive(Debug)]
 pub struct Player {
@@ -16,6 +19,7 @@ pub struct Player {
     is_jumping: bool,
     flip_horizontal: bool,
     flip_vertical: bool,
+    hit_spring: bool,
 }
 
 impl Player {
@@ -23,6 +27,7 @@ impl Player {
     pub const HALF_SIZE: Vec2<f32> = Vec2::new(Self::PLAYER_SQUARE / 2., Self::PLAYER_SQUARE / 2.);
     pub const FALL_DOWN: f32 = 1.;
     pub const FALL_UP: f32 = -1.;
+    pub const SPRING_FORCE: f32 = 10.;
 
     pub fn new(spawn_pos: Vec2<f32>) -> Player {
         Player {
@@ -34,6 +39,7 @@ impl Player {
             is_jumping: false,
             flip_horizontal: false,
             flip_vertical: false,
+            hit_spring: false,
         }
     }
 
@@ -67,9 +73,19 @@ impl Player {
             self.velocity.x = target_speed;
         }
 
-        self.velocity.y += GRAVITY * self.fall_direction;
-        if self.velocity.y.abs() > MAX_FALL_SPEED {
-            self.velocity.y = MAX_FALL_SPEED * self.fall_direction;
+        if self.hit_spring && self.velocity.y.signum() == self.fall_direction.signum() {
+            self.velocity.y -= GRAVITY * self.fall_direction;
+        } else {
+            self.velocity.y += GRAVITY * self.fall_direction;
+            if self.velocity.y.signum() == self.fall_direction.signum()
+                && self.velocity.y.abs() > MAX_FALL_SPEED
+            {
+                self.velocity.y = MAX_FALL_SPEED * self.fall_direction;
+            }
+        }
+
+        if self.hit_spring && self.velocity.y.abs() < MAX_FALL_SPEED {
+            self.hit_spring = false;
         }
 
         if jump && self.can_jump {
@@ -109,6 +125,25 @@ impl Player {
     }
 
     fn on_land(&mut self) {
+        self.can_jump = true;
+    }
+
+    pub fn on_spring(&mut self, facing: Facing) {
+        if self.hit_spring {
+            return;
+        }
+        match facing {
+            Facing::Up => {
+                self.velocity.y = -Self::SPRING_FORCE;
+            }
+            Facing::Down => {
+                self.velocity.y = Self::SPRING_FORCE;
+            }
+            _ => {
+                return;
+            }
+        }
+        self.hit_spring = true;
         self.can_jump = true;
     }
 

@@ -177,6 +177,7 @@ impl World {
 
         let neighbors = tilemap.get_neigbor_tile_hboxes(self.player.get_hbox().center());
         let mut spikes = vec![];
+        let mut springs = vec![];
         let mut collected_keys = vec![];
         for (tile, rect) in &neighbors {
             match tile {
@@ -197,6 +198,9 @@ impl World {
                 }
                 Tile::Key => {
                     collected_keys.push(rect);
+                }
+                Tile::Spring(dir) => {
+                    springs.push((rect, dir));
                 }
             }
         }
@@ -222,6 +226,11 @@ impl World {
             self.reset();
             return;
         }
+        springs.into_iter().for_each(|(rect, dir)| {
+            if player_rect.intersects(rect) {
+                self.player.on_spring(*dir);
+            }
+        });
         let tilemap_rect = tilemap.rect();
 
         if input::is_key_pressed(ctx, Key::R) || !tilemap_rect.intersects(&player_rect) {

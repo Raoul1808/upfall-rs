@@ -100,6 +100,9 @@ impl EditorScene {
         if input::is_key_pressed(ctx, Key::Num4) {
             self.tile = Tile::Key;
         }
+        if input::is_key_pressed(ctx, Key::Num5) {
+            self.tile = Tile::Spring(self.facing);
+        }
 
         if input::is_key_pressed(ctx, Key::Up) {
             self.axis = Axis::Vertical;
@@ -335,26 +338,39 @@ impl Scene for EditorScene {
                     ui.selectable_value(&mut self.tile, Tile::Spike(self.facing), "Spike");
                     ui.selectable_value(&mut self.tile, Tile::Portal(self.axis), "Portal");
                     ui.selectable_value(&mut self.tile, Tile::Key, "Key");
+                    ui.selectable_value(&mut self.tile, Tile::Spring(self.facing), "Spring");
                 });
-            if let Tile::Spike(ref mut facing) = self.tile {
-                egui::ComboBox::from_label("Facing")
-                    .selected_text(self.facing.to_string())
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut self.facing, Facing::Up, "Up");
-                        ui.selectable_value(&mut self.facing, Facing::Down, "Down");
-                        ui.selectable_value(&mut self.facing, Facing::Left, "Left");
-                        ui.selectable_value(&mut self.facing, Facing::Right, "Right");
-                    });
-                *facing = self.facing;
-            }
-            if let Tile::Portal(ref mut axis) = self.tile {
-                egui::ComboBox::from_label("Axis")
-                    .selected_text(self.axis.to_string())
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut self.axis, Axis::Horizontal, "Horizontal");
-                        ui.selectable_value(&mut self.axis, Axis::Vertical, "Vertical");
-                    });
-                *axis = self.axis;
+            match self.tile {
+                Tile::Spike(ref mut facing) => {
+                    egui::ComboBox::from_label("Facing")
+                        .selected_text(self.facing.to_string())
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.facing, Facing::Up, "Up");
+                            ui.selectable_value(&mut self.facing, Facing::Down, "Down");
+                            ui.selectable_value(&mut self.facing, Facing::Left, "Left");
+                            ui.selectable_value(&mut self.facing, Facing::Right, "Right");
+                        });
+                    *facing = self.facing;
+                }
+                Tile::Portal(ref mut axis) => {
+                    egui::ComboBox::from_label("Axis")
+                        .selected_text(self.axis.to_string())
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.axis, Axis::Horizontal, "Horizontal");
+                            ui.selectable_value(&mut self.axis, Axis::Vertical, "Vertical");
+                        });
+                    *axis = self.axis;
+                }
+                Tile::Spring(ref mut facing) => {
+                    egui::ComboBox::from_label("Facing")
+                        .selected_text(self.facing.to_string())
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.facing, Facing::Up, "Up");
+                            ui.selectable_value(&mut self.facing, Facing::Down, "Down");
+                        });
+                    *facing = self.facing;
+                }
+                _ => {}
             }
             ui.separator();
             egui::ComboBox::from_label("Palette Type")

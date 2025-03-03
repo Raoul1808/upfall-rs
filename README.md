@@ -1,3 +1,8 @@
+### Archival notice
+This rewrite uses a library that has halted development, and is also somewhat limiting. I've also been busy with life and university at this time and I completely stopped working on this rewrite.
+
+This repository will be archived for preservation. I will still remake the game whenever I can, but it won't be using Tetra.
+
 # upfall-rs
 This is a rewrite of my game jam game [Upfall](https://github.com/Raoul1808/Upfall) in Rust using Tetra.
 
